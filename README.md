@@ -14,6 +14,11 @@ DooDoo Log is a modern web application built to help users track their bowel hea
 - **Flags**: Boolean toggles for "Clogged Toilet" and "Blood Presence".
 - **Wipe Counter**: Track how many wipes it took (clean wipes get AI praise!).
 
+### 🔐 Secure Authentication
+- **Password Protection**: Accounts are now secured with passwords.
+- **Two-Factor Authentication (2FA)**: Optional security layer using simulated SMS or Email verification codes.
+- **Account Recovery**: "Forgot Username" flow to securely recover account access via email.
+
 ### 🎮 Gamification System
 Turn your bathroom breaks into an RPG!
 - **XP Calculation**:
@@ -83,6 +88,7 @@ Turn your bathroom breaks into an RPG!
   - `geminiService.ts`: AI prompt engineering.
   - `storageService.ts`: LocalStorage wrapper.
   - `friendsService.ts`: Simulated backend for social features.
+  - `authService.ts`: Authentication, 2FA, and User Session management.
 - **`constants.ts`**: Configuration for Bristol Scale data and Game Rules.
 - **`types.ts`**: TypeScript interfaces.
 

@@ -1,3 +1,19 @@
+# 🛠 v1.1.1 - The "Lock & Key" Patch
+**Released: October 26, 2025**
+
+We've tightened up security and added more options for protecting your account.
+
+### 🔐 Authentication Updates
+- **Passwords**: Users are now required to set a password during registration and use it for login.
+- **Forgot Username**: Added a recovery flow to securely retrieve your username via email.
+- **Two-Factor Authentication (2FA)**: Added an optional toggle to require a verification code (SMS or Email) when signing in.
+
+### 🛡 Security Fixes
+- **Privacy**: Email addresses and phone numbers are now partially masked in all confirmation messages.
+- **Safety**: Username recovery messages no longer explicitly display the username in the success alert.
+
+---
+
 # 🛠 v1.1 - The "Privacy & Persistence" Patch
 **Released: October 25, 2025**
 

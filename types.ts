@@ -43,6 +43,9 @@ export interface User {
   id: string; // Unique ID for social features
   username: string;
   email: string;
+  password?: string; // New: Simple simulation storage
+  phoneNumber?: string; // New: For SMS 2FA
+  isTwoFactorEnabled?: boolean; // New: Toggle
   avatar?: string;
   xp?: number;
   level?: number;
