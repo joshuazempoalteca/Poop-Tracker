@@ -27,3 +27,17 @@ export const deleteLog = (id: string): PoopLog[] => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(newLogs));
   return newLogs;
 };
+
+/**
+ * Removes AI commentary from ALL existing logs.
+ * Used when a user disables AI preference.
+ */
+export const clearAllAICommentaries = (): PoopLog[] => {
+    const logs = getLogs();
+    const updatedLogs = logs.map(log => ({
+        ...log,
+        aiCommentary: undefined // Remove the field
+    }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLogs));
+    return updatedLogs;
+};

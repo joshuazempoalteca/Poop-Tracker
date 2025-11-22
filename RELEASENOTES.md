@@ -1,3 +1,18 @@
+# 🛠 v1.1 - The "Privacy & Persistence" Patch
+**Released: October 25, 2025**
+
+We've polished up the experience based on your feedback!
+
+### 🔒 Privacy First
+- **AI Commentary Defaults**: The AI companion is now **disabled by default**. You can opt-in via your Profile settings if you want the extra wit.
+- **Fixed**: Resolved a bug where AI commentary would sometimes appear even when disabled.
+
+### 🧠 Smarter Login
+- **Remember Me**: The "Remember Me" checkbox now correctly persists your session and username across browser restarts.
+- **Session Handling**: Optimized storage usage to ensure smoother logins and logouts.
+
+---
+
 # 🎉 DooDoo Log v1.0 - The "Golden Drop" Update
 
 **Welcome to the premier launch of DooDoo Log!** 

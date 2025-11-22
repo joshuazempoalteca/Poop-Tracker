@@ -15,10 +15,24 @@ export const shareLog = async (log: PoopLog): Promise<string> => {
   if (log.durationMinutes) {
     lines.push(`⏱️ Duration: ${log.durationMinutes} min`);
   }
-
-  if (log.aiCommentary) {
-    lines.push(`🤖 AI says: "${log.aiCommentary}"`);
+  
+  if (log.wipes !== undefined) {
+      lines.push(`🧻 Wipes: ${log.wipes}`);
   }
+
+  if (log.painLevel !== undefined && log.painLevel > 0) {
+      lines.push(`😖 Pain: ${log.painLevel}/10`);
+  }
+
+  const flags = [];
+  if (log.hasBlood) flags.push('Blood 🩸');
+  if (log.isClog) flags.push('Clog 🪠');
+  
+  if (flags.length > 0) {
+      lines.push(`⚠️ Flags: ${flags.join(', ')}`);
+  }
+
+  // NOTE: AI Summary removed per request for sharing privacy/simplicity.
 
   const text = lines.join('\n');
 

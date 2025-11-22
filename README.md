@@ -32,6 +32,7 @@ Turn your bathroom breaks into an RPG!
 - Powered by **Google Gemini 2.5 Flash**.
 - Generates witty, humorous, or supportive commentary based on your log data.
 - *Example*: "Congratulations on a Type 4! That's the gold standard of bowel movements. Keep eating that fiber!"
+- **Note**: AI features are **toggled off by default** for privacy. Enable them in your profile settings. (Updated Oct 25, 2025)
 
 ### 👥 Social (Simulated Cloud)
 - **Friend Feed**: See logs from friends in a timeline.

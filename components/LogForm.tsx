@@ -58,6 +58,7 @@ export const LogForm: React.FC<LogFormProps> = ({ onSave, onCancel, aiEnabled })
     }
 
     let insight = '';
+    const wipesCount = wipes ? parseInt(wipes) : 0;
 
     if (aiEnabled) {
         setIsAnalyzing(true);
@@ -67,18 +68,17 @@ export const LogForm: React.FC<LogFormProps> = ({ onSave, onCancel, aiEnabled })
         } catch (err) {
           console.error(err);
         }
-    }
 
-    // Wipe Logic (Clean wipe bonus msg)
-    const wipesCount = wipes ? parseInt(wipes) : 0;
-    let cleanWipeMsg = '';
-    if (wipes && wipesCount < 5) {
-        cleanWipeMsg = "That came out clean!";
-    }
-    
-    // Append clean wipe message
-    if (cleanWipeMsg) {
-        insight = insight ? `${insight} ${cleanWipeMsg}` : cleanWipeMsg;
+        // Wipe Logic (Clean wipe bonus msg) - Only if AI/Commentary is enabled
+        let cleanWipeMsg = '';
+        if (wipes && wipesCount < 5) {
+            cleanWipeMsg = "That came out clean!";
+        }
+        
+        // Append clean wipe message
+        if (cleanWipeMsg) {
+            insight = insight ? `${insight} ${cleanWipeMsg}` : cleanWipeMsg;
+        }
     }
 
     const newLog: PoopLog = {
@@ -87,7 +87,7 @@ export const LogForm: React.FC<LogFormProps> = ({ onSave, onCancel, aiEnabled })
       type,
       notes,
       durationMinutes: duration ? parseInt(duration) : undefined,
-      aiCommentary: insight,
+      aiCommentary: insight || undefined,
       painLevel,
       wipes: wipesCount,
       isClog,

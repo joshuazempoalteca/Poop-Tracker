@@ -250,7 +250,7 @@ export const FriendFeed: React.FC<FriendFeedProps> = ({ currentUser, onUpdateUse
                             type="text" 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search usernames (e.g., Gary)" 
+                            placeholder="Username (e.g. Gary) or ID (e.g. u_gary)" 
                             className="w-full pl-9 pr-3 py-2 rounded-lg bg-stone-100 dark:bg-stone-800 border-none text-sm focus:ring-2 focus:ring-brown-500 outline-none text-stone-900 dark:text-stone-100"
                         />
                       </div>
@@ -262,6 +262,9 @@ export const FriendFeed: React.FC<FriendFeedProps> = ({ currentUser, onUpdateUse
                           {isSearching ? '...' : 'Search'}
                       </button>
                   </form>
+                  <p className="text-[10px] text-stone-400 mt-2 ml-1">
+                    Tip: Ask your friends for their unique User ID if you can't find their username.
+                  </p>
 
                   {/* Search Results */}
                   {searchResults.length > 0 && (
@@ -273,7 +276,7 @@ export const FriendFeed: React.FC<FriendFeedProps> = ({ currentUser, onUpdateUse
                                       <img src={user.avatar} alt="av" className="w-8 h-8 rounded-full bg-stone-200" />
                                       <div>
                                           <div className="text-sm font-bold text-brown-900 dark:text-stone-200">{user.username}</div>
-                                          <div className="text-xs text-stone-500">Lvl {user.level}</div>
+                                          <div className="text-xs text-stone-500">Lvl {user.level} • {user.id}</div>
                                       </div>
                                   </div>
                                   <button 
@@ -287,7 +290,7 @@ export const FriendFeed: React.FC<FriendFeedProps> = ({ currentUser, onUpdateUse
                       </div>
                   )}
                   {searchResults.length === 0 && searchQuery && !isSearching && (
-                      <div className="mt-3 text-xs text-stone-500 italic">No users found. Try 'Gary', 'Lisa', or 'Bob'.</div>
+                      <div className="mt-3 text-xs text-stone-500 italic">No users found. Try 'Gary' or 'u_gary'.</div>
                   )}
               </div>
 

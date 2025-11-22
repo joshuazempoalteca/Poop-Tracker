@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { PoopLog, BristolType } from '../types';
 import { BRISTOL_SCALE_DATA } from '../constants';
 import { shareLog } from '../utils/shareUtils';
-import { Share2, Trash2, MessageSquareQuote, Clock, Filter, ArrowUpDown, AlertTriangle, Zap, Layers, Scale, Search, Droplet } from 'lucide-react';
+import { Share2, Trash2, MessageSquareQuote, Clock, Filter, ArrowUpDown, AlertTriangle, Zap, Layers, Scale, Search, Droplet, CheckSquare, Square } from 'lucide-react';
 
 interface HistoryListProps {
   logs: PoopLog[];
@@ -12,7 +12,8 @@ interface HistoryListProps {
 type SortOrder = 'desc' | 'asc';
 
 export const HistoryList: React.FC<HistoryListProps> = ({ logs, onDelete }) => {
-  const [filterType, setFilterType] = useState<BristolType | 'ALL'>('ALL');
+  // Filter state now holds an array of selected types. Empty means ALL.
+  const [selectedTypes, setSelectedTypes] = useState<BristolType[]>([]);
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -22,6 +23,14 @@ export const HistoryList: React.FC<HistoryListProps> = ({ logs, onDelete }) => {
     if (!navigator.share) {
         alert(result);
     }
+  };
+
+  const toggleTypeFilter = (type: BristolType) => {
+      setSelectedTypes(prev => 
+          prev.includes(type) 
+            ? prev.filter(t => t !== type) 
+            : [...prev, type]
+      );
   };
 
   const filteredLogs = useMemo(() => {
@@ -36,9 +45,9 @@ export const HistoryList: React.FC<HistoryListProps> = ({ logs, onDelete }) => {
         );
     }
 
-    // Type Filter
-    if (filterType !== 'ALL') {
-        processed = processed.filter(log => log.type === filterType);
+    // Type Filter (Multi-select)
+    if (selectedTypes.length > 0) {
+        processed = processed.filter(log => selectedTypes.includes(log.type));
     }
 
     // Sort
@@ -51,7 +60,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({ logs, onDelete }) => {
     });
 
     return processed;
-  }, [logs, filterType, sortOrder, searchQuery]);
+  }, [logs, selectedTypes, sortOrder, searchQuery]);
 
   if (logs.length === 0) {
     return (
@@ -83,10 +92,12 @@ export const HistoryList: React.FC<HistoryListProps> = ({ logs, onDelete }) => {
             <div className="flex items-center gap-2">
                 <button 
                     onClick={() => setShowFilters(!showFilters)}
-                    className={`p-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors ${filterType !== 'ALL' ? 'bg-brown-100 text-brown-800 dark:bg-brown-900 dark:text-brown-200' : 'hover:bg-brown-50 dark:hover:bg-stone-800 text-brown-600 dark:text-stone-400'}`}
+                    className={`p-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors ${selectedTypes.length > 0 ? 'bg-brown-100 text-brown-800 dark:bg-brown-900 dark:text-brown-200' : 'hover:bg-brown-50 dark:hover:bg-stone-800 text-brown-600 dark:text-stone-400'}`}
                 >
                     <Filter className="w-4 h-4" />
-                    <span className="hidden sm:inline">{filterType === 'ALL' ? 'All Types' : `Type ${filterType}`}</span>
+                    <span className="hidden sm:inline">
+                        {selectedTypes.length === 0 ? 'All Types' : `${selectedTypes.length} Selected`}
+                    </span>
                 </button>
                 
                 <button 
@@ -103,24 +114,37 @@ export const HistoryList: React.FC<HistoryListProps> = ({ logs, onDelete }) => {
         </div>
       </div>
 
-      {/* Expanded Filters */}
+      {/* Expanded Multi-Select Filters */}
       {showFilters && (
-          <div className="grid grid-cols-4 gap-2 bg-white dark:bg-stone-900 p-4 rounded-xl shadow-inner border border-brown-100 dark:border-stone-800 animate-in slide-in-from-top-2">
-              <button 
-                onClick={() => { setFilterType('ALL'); setShowFilters(false); }}
-                className={`text-xs p-2 rounded-lg border ${filterType === 'ALL' ? 'bg-brown-600 text-white border-brown-600' : 'border-brown-100 dark:border-stone-700 text-brown-600 dark:text-stone-400 hover:bg-brown-50 dark:hover:bg-stone-800'}`}
-              >
-                  All
-              </button>
-              {BRISTOL_SCALE_DATA.map(d => (
-                  <button
-                    key={d.type}
-                    onClick={() => { setFilterType(d.type); setShowFilters(false); }}
-                    className={`text-xs p-2 rounded-lg border truncate ${filterType === d.type ? 'bg-brown-600 text-white border-brown-600' : 'border-brown-100 dark:border-stone-700 text-brown-600 dark:text-stone-400 hover:bg-brown-50 dark:hover:bg-stone-800'}`}
+          <div className="bg-white dark:bg-stone-900 p-4 rounded-xl shadow-inner border border-brown-100 dark:border-stone-800 animate-in slide-in-from-top-2">
+              <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs font-semibold text-brown-600 dark:text-stone-400">Tap multiple to combine</span>
+                  <button 
+                    onClick={() => setSelectedTypes([])}
+                    className="text-xs text-amber-600 hover:text-amber-700 font-medium"
                   >
-                      Type {d.type}
+                      Clear All
                   </button>
-              ))}
+              </div>
+              <div className="grid grid-cols-4 sm:grid-cols-4 gap-2">
+                {BRISTOL_SCALE_DATA.map(d => {
+                    const isSelected = selectedTypes.includes(d.type);
+                    return (
+                        <button
+                            key={d.type}
+                            onClick={() => toggleTypeFilter(d.type)}
+                            className={`flex flex-col items-center gap-1 p-2 rounded-lg border text-xs transition-all ${
+                                isSelected 
+                                ? 'bg-brown-600 text-white border-brown-600 shadow-md' 
+                                : 'bg-stone-50 dark:bg-stone-800 border-transparent text-brown-600 dark:text-stone-400 hover:bg-brown-100 dark:hover:bg-stone-700'
+                            }`}
+                        >
+                            <span className="text-base">{d.icon}</span>
+                            <span className="font-bold">Type {d.type}</span>
+                        </button>
+                    );
+                })}
+              </div>
           </div>
       )}
 

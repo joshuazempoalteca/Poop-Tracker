@@ -14,7 +14,7 @@ const MOCK_DATABASE_USERS: FriendProfile[] = [
 // --- SERVICE METHODS ---
 
 /**
- * Simulaties searching the "cloud" for a user by username
+ * Simulaties searching the "cloud" for a user by username or ID
  */
 export const searchUsers = async (query: string): Promise<FriendProfile[]> => {
   // Simulate network delay
@@ -22,7 +22,11 @@ export const searchUsers = async (query: string): Promise<FriendProfile[]> => {
   
   if (!query) return [];
   const lowerQ = query.toLowerCase();
-  return MOCK_DATABASE_USERS.filter(u => u.username.toLowerCase().includes(lowerQ));
+  
+  return MOCK_DATABASE_USERS.filter(u => 
+    u.username.toLowerCase().includes(lowerQ) || 
+    u.id.toLowerCase().includes(lowerQ)
+  );
 };
 
 /**

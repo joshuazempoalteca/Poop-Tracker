@@ -7,7 +7,7 @@ import { UserProfile } from './components/UserProfile';
 import { Auth } from './components/Auth';
 import { FriendFeed } from './components/FriendFeed';
 import { getLogs, saveLog, deleteLog } from './services/storageService';
-import { getCurrentUser, logoutUser } from './services/authService';
+import { getCurrentUser, logoutUser, updateUserProfile } from './services/authService';
 import { PoopLog, User } from './types';
 import { calculateXP } from './services/gamificationService';
 
@@ -36,7 +36,7 @@ const App: React.FC = () => {
     if (currentUser) {
         // Ensure XP initialized if older account
         if (currentUser.xp === undefined) currentUser.xp = 0;
-        if (currentUser.isAiEnabled === undefined) currentUser.isAiEnabled = true;
+        if (currentUser.isAiEnabled === undefined) currentUser.isAiEnabled = false;
         // Ensure social fields exist
         if (!currentUser.id) currentUser.id = crypto.randomUUID();
         if (!currentUser.friends) currentUser.friends = [];
@@ -73,7 +73,7 @@ const App: React.FC = () => {
   };
 
   const handleLogin = (newUser: User) => {
-      if (newUser.isAiEnabled === undefined) newUser.isAiEnabled = true;
+      if (newUser.isAiEnabled === undefined) newUser.isAiEnabled = false;
       setUser(newUser);
   };
 
@@ -85,7 +85,12 @@ const App: React.FC = () => {
 
   const handleUserUpdate = (updatedUser: User) => {
       setUser(updatedUser);
-      localStorage.setItem('doodoo_user_v1', JSON.stringify(updatedUser));
+      // Persist to simulated DB
+      updateUserProfile(updatedUser);
+  };
+
+  const handleLogsUpdated = (newLogs: PoopLog[]) => {
+      setLogs(newLogs);
   };
 
   const handleSave = (log: PoopLog) => {
@@ -163,6 +168,7 @@ const App: React.FC = () => {
         toggleDarkMode={toggleDarkMode}
         logs={logs}
         onUpdateUser={handleUserUpdate}
+        onLogsUpdated={handleLogsUpdated}
       />
 
       {/* Header */}
@@ -185,7 +191,7 @@ const App: React.FC = () => {
           <LogForm 
             onSave={handleSave} 
             onCancel={() => setView(View.HISTORY)} 
-            aiEnabled={user?.isAiEnabled ?? true}
+            aiEnabled={user?.isAiEnabled ?? false}
           />
         )}
 
