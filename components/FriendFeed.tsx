@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { getFriendFeed, searchUsers, getFriendsByIds } from '../services/friendsService';
+import { getFriendFeed, searchUsers, getFriendsByIds, getFriendRequests, sendFriendRequest, acceptFriendRequest, denyFriendRequest } from '../services/friendsService';
 import { FriendLog, User, FriendProfile } from '../types';
 import { BRISTOL_SCALE_DATA } from '../constants';
-import { Users, Search, UserPlus, UserMinus, MessageCircle, Loader2 } from 'lucide-react';
+import { Users, Search, UserPlus, UserMinus, MessageCircle, Loader2, UserCheck, Clock, Check, X } from 'lucide-react';
 
 interface FriendFeedProps {
   currentUser: User;
@@ -20,18 +20,20 @@ export const FriendFeed: React.FC<FriendFeedProps> = ({ currentUser, onUpdateUse
 
   // Manage State
   const [myFriends, setMyFriends] = useState<FriendProfile[]>([]);
+  const [incomingRequests, setIncomingRequests] = useState<FriendProfile[]>([]);
   const [searchResults, setSearchResults] = useState<FriendProfile[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [pendingActionId, setPendingActionId] = useState<string | null>(null);
 
   // Initial Load
   useEffect(() => {
     if (activeTab === 'FEED') {
         loadFeed();
     } else {
-        loadFriendsList();
+        loadFriendsData();
     }
-  }, [activeTab, currentUser.friends]);
+  }, [activeTab, currentUser.friends, currentUser.friendRequests]);
 
   const loadFeed = async () => {
     setLoadingFeed(true);
@@ -40,12 +42,19 @@ export const FriendFeed: React.FC<FriendFeedProps> = ({ currentUser, onUpdateUse
     setLoadingFeed(false);
   };
 
-  const loadFriendsList = async () => {
+  const loadFriendsData = async () => {
     if (currentUser.friends && currentUser.friends.length > 0) {
         const profiles = await getFriendsByIds(currentUser.friends);
         setMyFriends(profiles);
     } else {
         setMyFriends([]);
+    }
+
+    if (currentUser.friendRequests && currentUser.friendRequests.length > 0) {
+        const requests = await getFriendRequests(currentUser.friendRequests);
+        setIncomingRequests(requests);
+    } else {
+        setIncomingRequests([]);
     }
   };
 
@@ -55,31 +64,58 @@ export const FriendFeed: React.FC<FriendFeedProps> = ({ currentUser, onUpdateUse
       
       setIsSearching(true);
       const results = await searchUsers(searchQuery);
-      // Filter out self and existing friends
-      const filtered = results.filter(r => 
-        r.id !== currentUser.id && 
-        !currentUser.friends?.includes(r.id)
-      );
+      
+      // Filter logic:
+      // Don't show myself
+      const filtered = results.filter(r => r.id !== currentUser.id);
+      
       setSearchResults(filtered);
       setIsSearching(false);
   };
 
-  const handleAddFriend = (friendId: string) => {
-      const currentFriends = currentUser.friends || [];
-      if (currentFriends.includes(friendId)) return;
+  const handleSendRequest = async (targetId: string) => {
+      setPendingActionId(targetId);
+      try {
+        const updatedUser = await sendFriendRequest(currentUser, targetId);
+        onUpdateUser(updatedUser);
+      } catch (e) {
+          console.error(e);
+      } finally {
+        setPendingActionId(null);
+      }
+  };
 
-      const updatedUser = {
-          ...currentUser,
-          friends: [...currentFriends, friendId]
-      };
-      onUpdateUser(updatedUser);
-      
-      // Remove from search results immediately
-      setSearchResults(prev => prev.filter(p => p.id !== friendId));
-      alert("Friend added!");
+  const handleAcceptRequest = async (requesterId: string) => {
+    setPendingActionId(requesterId);
+    try {
+        const updatedUser = await acceptFriendRequest(currentUser, requesterId);
+        onUpdateUser(updatedUser);
+        // UI updates automatically via useEffect on currentUser
+    } catch (e) {
+        console.error(e);
+    } finally {
+        setPendingActionId(null);
+    }
+  };
+
+  const handleDenyRequest = async (requesterId: string) => {
+    setPendingActionId(requesterId);
+    try {
+        const updatedUser = await denyFriendRequest(currentUser, requesterId);
+        onUpdateUser(updatedUser);
+    } catch (e) {
+        console.error(e);
+    } finally {
+        setPendingActionId(null);
+    }
   };
 
   const handleRemoveFriend = (friendId: string) => {
+      if(!confirm("Are you sure you want to remove this friend?")) return;
+      
+      // For now, we reuse deny logic or manually update, 
+      // but strictly we should have a removeFriend service. 
+      // Quick fix: Update local user state to remove ID.
       const updatedUser = {
           ...currentUser,
           friends: (currentUser.friends || []).filter(id => id !== friendId)
@@ -119,6 +155,14 @@ export const FriendFeed: React.FC<FriendFeedProps> = ({ currentUser, onUpdateUse
     );
   };
 
+  // Helper to determine status for search result
+  const getRelationshipStatus = (profileId: string) => {
+      if (currentUser.friends?.includes(profileId)) return 'FRIEND';
+      if (currentUser.friendRequests?.includes(profileId)) return 'INCOMING';
+      if (currentUser.outgoingRequests?.includes(profileId)) return 'OUTGOING';
+      return 'NONE';
+  };
+
   return (
     <div className="space-y-4 pb-24 animate-in fade-in">
       {/* Tab Switcher */}
@@ -131,9 +175,12 @@ export const FriendFeed: React.FC<FriendFeedProps> = ({ currentUser, onUpdateUse
           </button>
           <button 
             onClick={() => setActiveTab('MANAGE')}
-            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${activeTab === 'MANAGE' ? 'bg-brown-100 text-brown-800 dark:bg-stone-800 dark:text-stone-200 shadow-sm' : 'text-brown-400 dark:text-stone-500 hover:bg-brown-50 dark:hover:bg-stone-800'}`}
+            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all relative ${activeTab === 'MANAGE' ? 'bg-brown-100 text-brown-800 dark:bg-stone-800 dark:text-stone-200 shadow-sm' : 'text-brown-400 dark:text-stone-500 hover:bg-brown-50 dark:hover:bg-stone-800'}`}
           >
               My Friends
+              {incomingRequests.length > 0 && (
+                  <span className="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+              )}
           </button>
       </div>
 
@@ -152,7 +199,7 @@ export const FriendFeed: React.FC<FriendFeedProps> = ({ currentUser, onUpdateUse
                       <p className="text-brown-500 dark:text-stone-500 text-sm px-6 mb-4">
                           {(currentUser.friends?.length || 0) === 0 
                             ? "You haven't added any friends yet. Go to 'My Friends' to find people!" 
-                            : "Your friends haven't logged anything recently."}
+                            : "Your friends haven't logged anything public recently."}
                       </p>
                       {(currentUser.friends?.length || 0) === 0 && (
                          <button onClick={() => setActiveTab('MANAGE')} className="px-4 py-2 bg-brown-600 text-white rounded-lg text-sm font-bold hover:bg-brown-700">
@@ -238,10 +285,49 @@ export const FriendFeed: React.FC<FriendFeedProps> = ({ currentUser, onUpdateUse
       {/* === MANAGE FRIENDS TAB === */}
       {activeTab === 'MANAGE' && (
           <div className="space-y-6">
+              
+              {/* Incoming Requests */}
+              {incomingRequests.length > 0 && (
+                  <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-200 dark:border-amber-800">
+                      <h3 className="text-sm font-bold text-amber-800 dark:text-amber-200 mb-3 flex items-center gap-2">
+                          <UserPlus className="w-4 h-4" /> Friend Requests
+                      </h3>
+                      <div className="space-y-2">
+                          {incomingRequests.map(req => (
+                               <div key={req.id} className="flex items-center justify-between p-3 bg-white dark:bg-stone-900 rounded-xl shadow-sm">
+                                   <div className="flex items-center gap-3">
+                                      <img src={req.avatar} alt="av" className="w-10 h-10 rounded-full bg-stone-200" />
+                                      <div>
+                                          <div className="text-sm font-bold text-brown-900 dark:text-stone-200">{req.username}</div>
+                                          <div className="text-xs text-stone-500">Lvl {req.level}</div>
+                                      </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                      <button 
+                                        onClick={() => handleAcceptRequest(req.id)}
+                                        disabled={pendingActionId === req.id}
+                                        className="p-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-full transition-colors"
+                                      >
+                                          {pendingActionId === req.id ? <Loader2 className="w-4 h-4 animate-spin"/> : <Check className="w-4 h-4" />}
+                                      </button>
+                                      <button 
+                                        onClick={() => handleDenyRequest(req.id)}
+                                        disabled={pendingActionId === req.id}
+                                        className="p-2 bg-red-100 text-red-700 hover:bg-red-200 rounded-full transition-colors"
+                                      >
+                                           <X className="w-4 h-4" />
+                                      </button>
+                                  </div>
+                               </div>
+                          ))}
+                      </div>
+                  </div>
+              )}
+
               {/* Search Box */}
               <div className="bg-white dark:bg-stone-900 p-4 rounded-xl shadow-sm border border-brown-100 dark:border-stone-800">
                   <h3 className="text-sm font-bold text-brown-800 dark:text-stone-200 mb-3 flex items-center gap-2">
-                      <UserPlus className="w-4 h-4" /> Find Friends
+                      <Search className="w-4 h-4" /> Find New Friends
                   </h3>
                   <form onSubmit={handleSearch} className="flex gap-2">
                       <div className="relative flex-1">
@@ -250,7 +336,7 @@ export const FriendFeed: React.FC<FriendFeedProps> = ({ currentUser, onUpdateUse
                             type="text" 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Username (e.g. Gary) or ID (e.g. u_gary)" 
+                            placeholder="Username or ID" 
                             className="w-full pl-9 pr-3 py-2 rounded-lg bg-stone-100 dark:bg-stone-800 border-none text-sm focus:ring-2 focus:ring-brown-500 outline-none text-stone-900 dark:text-stone-100"
                         />
                       </div>
@@ -262,35 +348,59 @@ export const FriendFeed: React.FC<FriendFeedProps> = ({ currentUser, onUpdateUse
                           {isSearching ? '...' : 'Search'}
                       </button>
                   </form>
-                  <p className="text-[10px] text-stone-400 mt-2 ml-1">
-                    Tip: Ask your friends for their unique User ID if you can't find their username.
-                  </p>
 
                   {/* Search Results */}
                   {searchResults.length > 0 && (
                       <div className="mt-4 space-y-2 border-t border-stone-100 dark:border-stone-800 pt-4">
                           <p className="text-xs text-stone-500 font-semibold mb-2">Results</p>
-                          {searchResults.map(user => (
-                              <div key={user.id} className="flex items-center justify-between p-2 bg-stone-50 dark:bg-stone-800 rounded-lg">
-                                  <div className="flex items-center gap-3">
-                                      <img src={user.avatar} alt="av" className="w-8 h-8 rounded-full bg-stone-200" />
-                                      <div>
-                                          <div className="text-sm font-bold text-brown-900 dark:text-stone-200">{user.username}</div>
-                                          <div className="text-xs text-stone-500">Lvl {user.level} • {user.id}</div>
-                                      </div>
-                                  </div>
-                                  <button 
-                                    onClick={() => handleAddFriend(user.id)}
-                                    className="text-xs bg-brown-600 text-white px-3 py-1.5 rounded-full hover:bg-brown-700 transition-colors font-medium"
-                                  >
-                                      Add
-                                  </button>
-                              </div>
-                          ))}
+                          {searchResults.map(user => {
+                              const status = getRelationshipStatus(user.id);
+                              
+                              return (
+                                <div key={user.id} className="flex items-center justify-between p-2 bg-stone-50 dark:bg-stone-800 rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                        <img src={user.avatar} alt="av" className="w-8 h-8 rounded-full bg-stone-200" />
+                                        <div>
+                                            <div className="text-sm font-bold text-brown-900 dark:text-stone-200">{user.username}</div>
+                                            <div className="text-xs text-stone-500">Lvl {user.level} • {user.id.slice(0, 8)}...</div>
+                                        </div>
+                                    </div>
+                                    
+                                    {status === 'FRIEND' && (
+                                        <span className="text-xs font-bold text-green-600 flex items-center gap-1">
+                                            <UserCheck className="w-3 h-3" /> Friends
+                                        </span>
+                                    )}
+                                    
+                                    {status === 'OUTGOING' && (
+                                        <span className="text-xs font-bold text-stone-500 flex items-center gap-1">
+                                            <Clock className="w-3 h-3" /> Requested
+                                        </span>
+                                    )}
+                                    
+                                    {status === 'INCOMING' && (
+                                         <button 
+                                            onClick={() => handleAcceptRequest(user.id)}
+                                            className="text-xs bg-green-600 text-white px-3 py-1.5 rounded-full hover:bg-green-700 transition-colors font-medium"
+                                         >
+                                            Accept
+                                         </button>
+                                    )}
+                                    
+                                    {status === 'NONE' && (
+                                        <button 
+                                            onClick={() => handleSendRequest(user.id)}
+                                            disabled={pendingActionId === user.id}
+                                            className="text-xs bg-brown-600 text-white px-3 py-1.5 rounded-full hover:bg-brown-700 transition-colors font-medium disabled:opacity-50 flex items-center gap-1"
+                                        >
+                                            {pendingActionId === user.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserPlus className="w-3 h-3" />}
+                                            Request
+                                        </button>
+                                    )}
+                                </div>
+                              );
+                          })}
                       </div>
-                  )}
-                  {searchResults.length === 0 && searchQuery && !isSearching && (
-                      <div className="mt-3 text-xs text-stone-500 italic">No users found. Try 'Gary' or 'u_gary'.</div>
                   )}
               </div>
 

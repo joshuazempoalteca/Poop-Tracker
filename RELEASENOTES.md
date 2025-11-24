@@ -1,3 +1,22 @@
+# 🛠 v1.1.2 - The "Consent & Secrets" Patch
+**Released: October 26, 2025**
+
+We've refined how you connect and what you share.
+
+### 🤝 Friend Requests
+- **No more instant adds**: You now send a request to add a friend.
+- **Control**: Accept or deny incoming friend requests.
+
+
+### 🙈 Privacy Controls
+- **Private Logs**: You can now mark specific logs as "Private". These won't show up on your friends' feeds.
+- **Default Sharing**: Sharing is on by default, but the choice is yours.
+
+### 🆔 User Identification
+- **User ID**: Your unique User ID (truncated) is now visible in your profile to help friends find you exactly.
+
+---
+
 # 🛠 v1.1.1 - The "Lock & Key" Patch
 **Released: October 26, 2025**
 

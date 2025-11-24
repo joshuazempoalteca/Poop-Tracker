@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { PoopLog, BristolType } from '../types';
 import { BRISTOL_SCALE_DATA } from '../constants';
 import { shareLog } from '../utils/shareUtils';
-import { Share2, Trash2, MessageSquareQuote, Clock, Filter, ArrowUpDown, AlertTriangle, Zap, Layers, Scale, Search, Droplet, CheckSquare, Square } from 'lucide-react';
+import { Share2, Trash2, MessageSquareQuote, Clock, Filter, ArrowUpDown, AlertTriangle, Zap, Layers, Scale, Search, Droplet, EyeOff } from 'lucide-react';
 
 interface HistoryListProps {
   logs: PoopLog[];
@@ -185,9 +185,14 @@ export const HistoryList: React.FC<HistoryListProps> = ({ logs, onDelete }) => {
                             <p>
                                 {date.toLocaleDateString()} at {date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                             </p>
-                            {/* Blood Icon Indicator */}
+                            {/* Icons Indicator */}
                             {log.hasBlood && (
                                 <Droplet className="w-3 h-3 text-red-500 fill-red-500" />
+                            )}
+                            {log.isPrivate && (
+                                <span title="Private Log">
+                                    <EyeOff className="w-3 h-3 text-stone-400" />
+                                </span>
                             )}
                         </div>
                         </div>
@@ -235,8 +240,8 @@ export const HistoryList: React.FC<HistoryListProps> = ({ logs, onDelete }) => {
                 </div>
                 
                 {/* Flags (Clog / Blood Tags) */}
-                {(log.isClog || log.hasBlood) && (
-                    <div className="ml-[3.75rem] flex gap-2">
+                {(log.isClog || log.hasBlood || log.isPrivate) && (
+                    <div className="ml-[3.75rem] flex flex-wrap gap-2">
                         {log.isClog && (
                             <span className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1 w-fit">
                                 <AlertTriangle className="w-3 h-3" /> Clog
@@ -245,6 +250,11 @@ export const HistoryList: React.FC<HistoryListProps> = ({ logs, onDelete }) => {
                         {log.hasBlood && (
                             <span className="text-[10px] bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-200 px-2 py-0.5 rounded-full flex items-center gap-1 w-fit">
                                 <Droplet className="w-3 h-3" /> Blood
+                            </span>
+                        )}
+                         {log.isPrivate && (
+                            <span className="text-[10px] bg-stone-100 dark:bg-stone-800 text-stone-500 px-2 py-0.5 rounded-full flex items-center gap-1 w-fit">
+                                <EyeOff className="w-3 h-3" /> Private
                             </span>
                         )}
                     </div>

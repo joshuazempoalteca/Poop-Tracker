@@ -4,7 +4,7 @@ import { BristolType, PoopLog, PoopSize } from '../types';
 import { POOP_SIZES } from '../constants';
 import { generatePoopInsight } from '../services/geminiService';
 import { calculateXP } from '../services/gamificationService';
-import { Loader2, Save, Clock, AlertTriangle, Droplet, Zap, Calendar, Scale } from 'lucide-react';
+import { Loader2, Save, Clock, AlertTriangle, Droplet, Zap, Calendar, Scale, Eye, EyeOff } from 'lucide-react';
 
 interface LogFormProps {
   onSave: (log: PoopLog) => void;
@@ -30,6 +30,9 @@ export const LogForm: React.FC<LogFormProps> = ({ onSave, onCancel, aiEnabled })
   const [isClog, setIsClog] = useState(false);
   const [hasBlood, setHasBlood] = useState(false);
   const [size, setSize] = useState<PoopSize>(PoopSize.Medium);
+  
+  // Privacy
+  const [isShared, setIsShared] = useState(true);
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -94,7 +97,8 @@ export const LogForm: React.FC<LogFormProps> = ({ onSave, onCancel, aiEnabled })
       size,
       hasBlood,
       weight: weight ? parseFloat(weight) : undefined,
-      xpGained: estimatedXP
+      xpGained: estimatedXP,
+      isPrivate: !isShared
     };
 
     setIsAnalyzing(false);
@@ -221,7 +225,7 @@ export const LogForm: React.FC<LogFormProps> = ({ onSave, onCancel, aiEnabled })
             <label className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${isClog ? 'bg-amber-100 border-amber-300 dark:bg-amber-900/20 dark:border-amber-700' : 'bg-brown-50 dark:bg-stone-800 border-transparent'}`}>
                 <span className="text-sm font-medium text-brown-900 dark:text-stone-200 flex items-center gap-2">
                     <AlertTriangle className={`w-4 h-4 ${isClog ? 'text-amber-600' : 'text-stone-400'}`} />
-                    Clogged Toilet?
+                    Clog?
                 </span>
                 <input type="checkbox" checked={isClog} onChange={(e) => setIsClog(e.target.checked)} className="accent-amber-600 w-5 h-5" />
             </label>
@@ -234,6 +238,22 @@ export const LogForm: React.FC<LogFormProps> = ({ onSave, onCancel, aiEnabled })
                 <input type="checkbox" checked={hasBlood} onChange={(e) => setHasBlood(e.target.checked)} className="accent-red-600 w-5 h-5" />
             </label>
           </div>
+
+          {/* Visibility Toggle */}
+           <div className="bg-stone-50 dark:bg-stone-800 p-3 rounded-xl border border-stone-100 dark:border-stone-700">
+                <label className="flex items-center justify-between cursor-pointer">
+                    <div className="flex flex-col">
+                        <span className="text-sm font-medium text-brown-800 dark:text-stone-300 flex items-center gap-2">
+                            {isShared ? <Eye className="w-4 h-4 text-green-600" /> : <EyeOff className="w-4 h-4 text-stone-400" />}
+                            Share with friends
+                        </span>
+                        <span className="text-xs text-stone-500 mt-0.5">
+                            {isShared ? 'Visible on Friend Feed' : 'Private (Only you can see this)'}
+                        </span>
+                    </div>
+                    <input type="checkbox" checked={isShared} onChange={(e) => setIsShared(e.target.checked)} className="accent-green-600 w-5 h-5" />
+                </label>
+           </div>
 
           {/* Notes */}
           <div>

@@ -13,6 +13,7 @@ DooDoo Log is a modern web application built to help users track their bowel hea
 - **Detailed Metrics**: Track duration, size, color, weight (optional), and pain levels (0-10).
 - **Flags**: Boolean toggles for "Clogged Toilet" and "Blood Presence".
 - **Wipe Counter**: Track how many wipes it took (clean wipes get AI praise!).
+- **Privacy Controls**: Toggle logs as "Private" to keep them off the Friend Feed.
 
 ### 🔐 Secure Authentication
 - **Password Protection**: Accounts are now secured with passwords.
@@ -42,7 +43,8 @@ Turn your bathroom breaks into an RPG!
 ### 👥 Social (Simulated Cloud)
 - **Friend Feed**: See logs from friends in a timeline.
 - **Reactions**: React to friends' logs with 💩, 🎉, 😨, etc.
-- **Friend Management**: Search for and add simulated users (e.g., "Gary_The_Log", "LisaLogs").
+- **Friend Management**: Send friend requests and accept/deny incoming requests.
+- **User IDs**: Share your unique ID (visible in Profile) so friends can find you easily.
 - *Note*: This uses a "Local Cloud Simulation" service. Data persists in LocalStorage but behaves like a real network request.
 
 ### 📊 Analytics

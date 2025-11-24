@@ -31,6 +31,7 @@ export interface PoopLog {
   hasBlood?: boolean;
   xpGained?: number;
   weight?: number; // in grams
+  isPrivate?: boolean; // If true, not shared with friends
 }
 
 export interface DailyStat {
@@ -52,6 +53,8 @@ export interface User {
   prestige?: number;
   isAiEnabled?: boolean;
   friends?: string[]; // List of Friend IDs
+  friendRequests?: string[]; // IDs of users who sent a request
+  outgoingRequests?: string[]; // IDs of users I sent a request to
 }
 
 export interface Reaction {

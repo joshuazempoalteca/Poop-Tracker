@@ -197,6 +197,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                     {user?.prestige && user.prestige > 0 && <Award className="w-4 h-4 text-purple-500" />}
                 </h2>
                 <p className="text-brown-500 dark:text-stone-500 text-sm">{user?.email}</p>
+                {user?.id && (
+                  <p className="text-stone-400 dark:text-stone-600 text-xs mt-1 font-mono select-all">
+                    #{user.id.split('-').slice(2).join('-')}
+                  </p>
+                )}
                 </div>
 
                 {/* Level Progress Bar */}
