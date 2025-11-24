@@ -38,22 +38,22 @@ const saveUsersDB = (db: Record<string, User>) => {
 
 // Expose DB reader for other services (like FriendsService)
 export const getAllUsers = (): User[] => {
-    const db = getUsersDB();
-    return Object.values(db);
+  const db = getUsersDB();
+  return Object.values(db);
 };
 
 export const getUserById = (id: string): User | null => {
-    const db = getUsersDB();
-    return db[id] || null;
+  const db = getUsersDB();
+  return db[id] || null;
 };
 
 // Allow updating any user (for friend requests)
 export const updateOtherUser = (user: User): void => {
-    const db = getUsersDB();
-    if (db[user.id]) {
-        db[user.id] = { ...db[user.id], ...user };
-        saveUsersDB(db);
-    }
+  const db = getUsersDB();
+  if (db[user.id]) {
+    db[user.id] = { ...db[user.id], ...user };
+    saveUsersDB(db);
+  }
 };
 
 // --- Auth Methods ---
@@ -77,27 +77,27 @@ export const getCurrentUser = (): User | null => {
 };
 
 export const registerUser = (
-  username: string, 
-  email: string, 
+  username: string,
+  email: string,
   password?: string,
   phoneNumber?: string,
   isTwoFactorEnabled?: boolean
 ): User => {
   const db = getUsersDB();
-  
+
   const existingId = Object.keys(db).find(key => db[key].username.toLowerCase() === username.toLowerCase());
   if (existingId) {
     throw new Error('Username already taken. Please try another.');
   }
 
-  const newUser: User = { 
+  const newUser: User = {
     id: crypto.randomUUID(),
-    username, 
+    username,
     email,
-    password, 
+    password,
     phoneNumber,
     isTwoFactorEnabled: !!isTwoFactorEnabled,
-    isAiEnabled: false, 
+    isAiEnabled: false,
     friends: [],
     friendRequests: [],
     outgoingRequests: [],
@@ -166,16 +166,19 @@ export const updateUserProfile = (user: User): void => {
 
   if (sessionStr) sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
   if (localStr) localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+
+  // Dispatch event to notify App component
+  window.dispatchEvent(new CustomEvent('doodoo-user-updated', { detail: user }));
 };
 
 // --- Recovery & 2FA Simulations ---
 
 export const recoverUsername = async (email: string): Promise<string> => {
   await new Promise(resolve => setTimeout(resolve, 1000));
-  
+
   const db = getUsersDB();
   const userId = Object.keys(db).find(key => db[key].email.toLowerCase() === email.toLowerCase());
-  
+
   if (userId) {
     return `Recovery email sent to ${maskEmail(email)}.`;
   } else {
@@ -185,40 +188,40 @@ export const recoverUsername = async (email: string): Promise<string> => {
 };
 
 export const initiatePasswordReset = async (email: string): Promise<string> => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    const db = getUsersDB();
-    const userId = Object.keys(db).find(key => db[key].email.toLowerCase() === email.toLowerCase());
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  const db = getUsersDB();
+  const userId = Object.keys(db).find(key => db[key].email.toLowerCase() === email.toLowerCase());
 
-    if (userId) {
-        return `Reset code sent to ${maskEmail(email)}.`;
-    }
-    throw new Error("No account found with that email.");
+  if (userId) {
+    return `Reset code sent to ${maskEmail(email)}.`;
+  }
+  throw new Error("No account found with that email.");
 };
 
 export const confirmPasswordReset = async (email: string, code: string, newPassword: string): Promise<string> => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // In real app, verify code here.
-    if (code !== '123456') {
-        throw new Error("Invalid verification code.");
-    }
+  await new Promise(resolve => setTimeout(resolve, 1000));
 
-    const db = getUsersDB();
-    const userId = Object.keys(db).find(key => db[key].email.toLowerCase() === email.toLowerCase());
+  // In real app, verify code here.
+  if (code !== '123456') {
+    throw new Error("Invalid verification code.");
+  }
 
-    if (userId) {
-        db[userId].password = newPassword;
-        saveUsersDB(db);
-        return "Password updated successfully. Please login.";
-    }
-    throw new Error("Account lookup failed.");
+  const db = getUsersDB();
+  const userId = Object.keys(db).find(key => db[key].email.toLowerCase() === email.toLowerCase());
+
+  if (userId) {
+    db[userId].password = newPassword;
+    saveUsersDB(db);
+    return "Password updated successfully. Please login.";
+  }
+  throw new Error("Account lookup failed.");
 };
 
 
 export const sendTwoFactorCode = async (user: User): Promise<string> => {
   await new Promise(resolve => setTimeout(resolve, 2000));
   const code = Math.floor(100000 + Math.random() * 900000).toString();
-  
+
   if (user.isTwoFactorEnabled && user.phoneNumber) {
     return `Code sent via SMS to ${maskPhone(user.phoneNumber)}`;
   } else {
@@ -227,6 +230,6 @@ export const sendTwoFactorCode = async (user: User): Promise<string> => {
 };
 
 export const verifyTwoFactorCode = async (inputCode: string): Promise<boolean> => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return inputCode.length === 6;
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  return inputCode.length === 6;
 };

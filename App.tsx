@@ -24,7 +24,7 @@ const App: React.FC = () => {
   const [logs, setLogs] = useState<PoopLog[]>([]);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  
+
   // Undo State
   const [undoLog, setUndoLog] = useState<PoopLog | null>(null);
   const [showToast, setShowToast] = useState(false);
@@ -34,72 +34,86 @@ const App: React.FC = () => {
     // Auth Check
     const currentUser = getCurrentUser();
     if (currentUser) {
-        // Ensure XP initialized if older account
-        if (currentUser.xp === undefined) currentUser.xp = 0;
-        if (currentUser.isAiEnabled === undefined) currentUser.isAiEnabled = false;
-        // Ensure social fields exist
-        if (!currentUser.id) currentUser.id = crypto.randomUUID();
-        if (!currentUser.friends) currentUser.friends = [];
-        
-        setUser(currentUser);
+      // Ensure XP initialized if older account
+      if (currentUser.xp === undefined) currentUser.xp = 0;
+      if (currentUser.isAiEnabled === undefined) currentUser.isAiEnabled = false;
+      // Ensure social fields exist
+      if (!currentUser.id) currentUser.id = crypto.randomUUID();
+      if (!currentUser.friends) currentUser.friends = [];
+
+      setUser(currentUser);
     }
 
     // Load Logs
     setLogs(getLogs());
-    
+
     // Dark Mode Check
     const storedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
+
     if (storedTheme === 'dark' || (!storedTheme && prefersDark)) {
-        setIsDarkMode(true);
-        document.documentElement.classList.add('dark');
+      setIsDarkMode(true);
+      document.documentElement.classList.add('dark');
     } else {
-        setIsDarkMode(false);
-        document.documentElement.classList.remove('dark');
+      setIsDarkMode(false);
+      document.documentElement.classList.remove('dark');
     }
-  }, []);
+
+    // Listen for background user updates (e.g. from mock services)
+    const handleUserUpdateEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<User>;
+      if (customEvent.detail && customEvent.detail.id === currentUser?.id) {
+        setUser(customEvent.detail);
+      }
+    };
+
+    window.addEventListener('doodoo-user-updated', handleUserUpdateEvent);
+
+    return () => {
+      window.removeEventListener('doodoo-user-updated', handleUserUpdateEvent);
+    };
+  }, [user?.id]);
 
   const toggleDarkMode = () => {
-      const newMode = !isDarkMode;
-      setIsDarkMode(newMode);
-      if (newMode) {
-          document.documentElement.classList.add('dark');
-          localStorage.setItem('theme', 'dark');
-      } else {
-          document.documentElement.classList.remove('dark');
-          localStorage.setItem('theme', 'light');
-      }
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    if (newMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
   };
 
   const handleLogin = (newUser: User) => {
-      if (newUser.isAiEnabled === undefined) newUser.isAiEnabled = false;
-      setUser(newUser);
+    if (newUser.isAiEnabled === undefined) newUser.isAiEnabled = false;
+    setUser(newUser);
   };
 
   const handleLogout = () => {
-      logoutUser();
-      setUser(null);
-      setIsProfileOpen(false);
+    logoutUser();
+    setUser(null);
+    setIsProfileOpen(false);
   };
 
   const handleUserUpdate = (updatedUser: User) => {
-      setUser(updatedUser);
-      // Persist to simulated DB
-      updateUserProfile(updatedUser);
+    setUser(updatedUser);
+    // Persist to simulated DB
+    updateUserProfile(updatedUser);
   };
 
   const handleLogsUpdated = (newLogs: PoopLog[]) => {
-      setLogs(newLogs);
+    setLogs(newLogs);
   };
 
   const handleSave = (log: PoopLog) => {
     // Calculate XP
     const xpGained = calculateXP({
-        type: log.type,
-        size: log.size,
-        hasBlood: log.hasBlood,
-        weight: log.weight
+      type: log.type,
+      size: log.size,
+      hasBlood: log.hasBlood,
+      weight: log.weight
     });
 
     // Update log with final XP
@@ -107,8 +121,8 @@ const App: React.FC = () => {
 
     // Update User XP
     if (user) {
-        const newUser = { ...user, xp: (user.xp || 0) + xpGained };
-        handleUserUpdate(newUser);
+      const newUser = { ...user, xp: (user.xp || 0) + xpGained };
+      handleUserUpdate(newUser);
     }
 
     const updated = saveLog(finalLog);
@@ -127,40 +141,40 @@ const App: React.FC = () => {
     setShowToast(true);
 
     if (toastTimeoutRef.current) {
-        clearTimeout(toastTimeoutRef.current);
+      clearTimeout(toastTimeoutRef.current);
     }
 
     toastTimeoutRef.current = window.setTimeout(() => {
-        setShowToast(false);
-        setUndoLog(null);
+      setShowToast(false);
+      setUndoLog(null);
     }, 5000);
   };
 
   const handleUndo = () => {
-      if (undoLog) {
-          const updated = saveLog(undoLog);
-          setLogs(updated);
-          closeToast();
-      }
+    if (undoLog) {
+      const updated = saveLog(undoLog);
+      setLogs(updated);
+      closeToast();
+    }
   };
 
   const closeToast = () => {
-      setShowToast(false);
-      setUndoLog(null);
-      if (toastTimeoutRef.current) {
-          clearTimeout(toastTimeoutRef.current);
-      }
+    setShowToast(false);
+    setUndoLog(null);
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
   };
 
   if (!user) {
-      return <Auth onLogin={handleLogin} />;
+    return <Auth onLogin={handleLogin} />;
   }
 
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950 font-sans text-stone-900 dark:text-stone-100 pb-20 max-w-md mx-auto border-x border-stone-200 dark:border-stone-800 shadow-2xl relative transition-colors duration-300">
-      
-      <UserProfile 
-        isOpen={isProfileOpen} 
+
+      <UserProfile
+        isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         user={user}
         onLogout={handleLogout}
@@ -177,20 +191,20 @@ const App: React.FC = () => {
           <span className="text-2xl">💩</span>
           <h1 className="text-xl font-bold text-brown-900 dark:text-stone-100 tracking-tight">DooDoo Log</h1>
         </div>
-        <button 
-            onClick={() => setIsProfileOpen(true)}
-            className="w-8 h-8 rounded-full bg-brown-100 dark:bg-stone-800 flex items-center justify-center text-brown-600 dark:text-stone-400 hover:bg-brown-200 dark:hover:bg-stone-700 transition-colors ring-2 ring-transparent hover:ring-brown-200"
+        <button
+          onClick={() => setIsProfileOpen(true)}
+          className="w-8 h-8 rounded-full bg-brown-100 dark:bg-stone-800 flex items-center justify-center text-brown-600 dark:text-stone-400 hover:bg-brown-200 dark:hover:bg-stone-700 transition-colors ring-2 ring-transparent hover:ring-brown-200"
         >
-            <UserCircle2 className="w-5 h-5" />
+          <UserCircle2 className="w-5 h-5" />
         </button>
       </header>
 
       {/* Main Content */}
       <main className="p-4">
         {view === View.LOG && (
-          <LogForm 
-            onSave={handleSave} 
-            onCancel={() => setView(View.HISTORY)} 
+          <LogForm
+            onSave={handleSave}
+            onCancel={() => setView(View.HISTORY)}
             aiEnabled={user?.isAiEnabled ?? false}
           />
         )}
@@ -206,7 +220,7 @@ const App: React.FC = () => {
 
         {view === View.STATS && (
           <>
-             <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold text-brown-800 dark:text-stone-200">Statistics</h2>
             </div>
             <StatsDashboard logs={logs} />
@@ -214,32 +228,32 @@ const App: React.FC = () => {
         )}
 
         {view === View.FRIENDS && (
-            <FriendFeed currentUser={user} onUpdateUser={handleUserUpdate} />
+          <FriendFeed currentUser={user} onUpdateUser={handleUserUpdate} />
         )}
       </main>
 
       {/* Toast Notification for Undo */}
       {showToast && (
-          <div className="absolute bottom-24 left-4 right-4 z-50 animate-in slide-in-from-bottom-5 duration-300">
-              <div className="bg-brown-800 dark:bg-stone-800 text-white dark:text-stone-100 p-4 rounded-xl shadow-2xl flex items-center justify-between gap-4 border border-transparent dark:border-stone-700">
-                  <span className="text-sm font-medium">Log deleted.</span>
-                  <div className="flex items-center gap-2">
-                      <button 
-                        onClick={handleUndo}
-                        className="text-amber-300 hover:text-amber-200 font-bold text-sm flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-brown-700 dark:hover:bg-stone-700 transition-colors"
-                      >
-                          <Undo2 className="w-4 h-4" />
-                          Undo
-                      </button>
-                      <button 
-                        onClick={closeToast}
-                        className="text-brown-400 hover:text-white p-1 rounded-full hover:bg-brown-700 dark:hover:bg-stone-700"
-                      >
-                          <X className="w-4 h-4" />
-                      </button>
-                  </div>
-              </div>
+        <div className="absolute bottom-24 left-4 right-4 z-50 animate-in slide-in-from-bottom-5 duration-300">
+          <div className="bg-brown-800 dark:bg-stone-800 text-white dark:text-stone-100 p-4 rounded-xl shadow-2xl flex items-center justify-between gap-4 border border-transparent dark:border-stone-700">
+            <span className="text-sm font-medium">Log deleted.</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleUndo}
+                className="text-amber-300 hover:text-amber-200 font-bold text-sm flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-brown-700 dark:hover:bg-stone-700 transition-colors"
+              >
+                <Undo2 className="w-4 h-4" />
+                Undo
+              </button>
+              <button
+                onClick={closeToast}
+                className="text-brown-400 hover:text-white p-1 rounded-full hover:bg-brown-700 dark:hover:bg-stone-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
+        </div>
       )}
 
       {/* Floating Action Button - ONLY SHOW ON HISTORY VIEW */}
@@ -259,19 +273,17 @@ const App: React.FC = () => {
         <div className="flex justify-between items-center px-2">
           <button
             onClick={() => setView(View.HISTORY)}
-            className={`flex flex-col items-center gap-1 ${
-              view === View.HISTORY ? 'text-brown-700 dark:text-stone-200' : 'text-brown-300 dark:text-stone-600 hover:text-brown-500 dark:hover:text-stone-400'
-            }`}
+            className={`flex flex-col items-center gap-1 ${view === View.HISTORY ? 'text-brown-700 dark:text-stone-200' : 'text-brown-300 dark:text-stone-600 hover:text-brown-500 dark:hover:text-stone-400'
+              }`}
           >
             <List className="w-6 h-6" />
             <span className="text-[10px] font-medium">History</span>
           </button>
-          
+
           <button
             onClick={() => setView(View.STATS)}
-            className={`flex flex-col items-center gap-1 ${
-              view === View.STATS ? 'text-brown-700 dark:text-stone-200' : 'text-brown-300 dark:text-stone-600 hover:text-brown-500 dark:hover:text-stone-400'
-            }`}
+            className={`flex flex-col items-center gap-1 ${view === View.STATS ? 'text-brown-700 dark:text-stone-200' : 'text-brown-300 dark:text-stone-600 hover:text-brown-500 dark:hover:text-stone-400'
+              }`}
           >
             <BarChart2 className="w-6 h-6" />
             <span className="text-[10px] font-medium">Stats</span>
@@ -279,9 +291,8 @@ const App: React.FC = () => {
 
           <button
             onClick={() => setView(View.FRIENDS)}
-            className={`flex flex-col items-center gap-1 ${
-              view === View.FRIENDS ? 'text-brown-700 dark:text-stone-200' : 'text-brown-300 dark:text-stone-600 hover:text-brown-500 dark:hover:text-stone-400'
-            }`}
+            className={`flex flex-col items-center gap-1 ${view === View.FRIENDS ? 'text-brown-700 dark:text-stone-200' : 'text-brown-300 dark:text-stone-600 hover:text-brown-500 dark:hover:text-stone-400'
+              }`}
           >
             <Users className="w-6 h-6" />
             <span className="text-[10px] font-medium">Friends</span>

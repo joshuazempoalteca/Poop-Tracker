@@ -2,6 +2,7 @@
 import { registerUser, loginSession, logoutUser } from '../services/authService';
 import { searchUsers } from '../services/friendsService';
 import { User } from '../types';
+import { runUnitTests } from './unitTests';
 
 /**
  * AUTOMATED TEST SUITE for DooDoo Log
@@ -10,7 +11,10 @@ import { User } from '../types';
 
 export const runIntegrationTests = async () => {
     console.group("🧪 DooDoo Log Integration Tests");
-    
+
+    // Run Unit Tests First
+    await runUnitTests();
+
     let testUser: User | null = null;
     const TEST_USERNAME = "AutoTestUser_" + Math.floor(Math.random() * 10000);
     const TEST_EMAIL = `${TEST_USERNAME}@example.com`;
@@ -35,7 +39,7 @@ export const runIntegrationTests = async () => {
             // We search for the username we just made
             const results = await searchUsers(TEST_USERNAME);
             const found = results.find(u => u.username === TEST_USERNAME);
-            
+
             if (found) {
                 console.log("✅ Friend Search Passed: User found in DB via Friend Service.");
             } else {
@@ -53,9 +57,9 @@ export const runIntegrationTests = async () => {
         // User was registered, so they should be in localStorage under doodoo_users_db_v1
         const storedDB = localStorage.getItem('doodoo_users_db_v1');
         if (storedDB && storedDB.includes(TEST_USERNAME)) {
-             console.log("✅ Data Persistence Passed: User exists in localStorage DB.");
+            console.log("✅ Data Persistence Passed: User exists in localStorage DB.");
         } else {
-             console.error("❌ Data Persistence Failed: User not in localStorage.");
+            console.error("❌ Data Persistence Failed: User not in localStorage.");
         }
     } catch (e) {
         console.error("❌ Persistence Error:", e);
