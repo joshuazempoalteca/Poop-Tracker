@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { X, Moon, Sun, User as UserIcon, LogOut, FileDown, Bell, BellOff, Trophy, Zap, Star, Award, Bot, AlertTriangle } from 'lucide-react';
+import { X, Moon, Sun, User as UserIcon, LogOut, FileDown, Bell, BellOff, Trophy, Zap, Star, Award, Bot, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { User, PoopLog } from '../types';
 import { exportLogsToCSV } from '../utils/exportUtils';
 import { calculateLevel } from '../services/gamificationService';
@@ -16,6 +17,7 @@ interface UserProfileProps {
   logs: PoopLog[];
   onUpdateUser: (user: User) => void;
   onLogsUpdated: (logs: PoopLog[]) => void;
+  onOpenLegal?: () => void;
 }
 
 export const UserProfile: React.FC<UserProfileProps> = ({ 
@@ -27,7 +29,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   toggleDarkMode,
   logs,
   onUpdateUser,
-  onLogsUpdated
+  onLogsUpdated,
+  onOpenLegal
 }) => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [showAiConfirm, setShowAiConfirm] = useState(false);
@@ -300,6 +303,17 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                     `} />
                     </button>
                 </div>
+
+                <div className="h-4"></div>
+
+                {/* Legal & Privacy */}
+                <button 
+                    onClick={onOpenLegal}
+                    className="w-full flex items-center gap-3 p-4 bg-stone-50 dark:bg-stone-800 rounded-xl border border-stone-100 dark:border-stone-700 hover:bg-brown-50 dark:hover:bg-stone-750 transition-colors text-left"
+                >
+                    <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-500" />
+                    <span className="font-medium text-stone-700 dark:text-stone-200">Legal & Privacy</span>
+                </button>
 
                 {/* Export Data */}
                 <button 

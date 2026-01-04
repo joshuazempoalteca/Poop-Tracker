@@ -1,3 +1,4 @@
+
 export enum BristolType {
   Type1 = 1,
   Type2 = 2,

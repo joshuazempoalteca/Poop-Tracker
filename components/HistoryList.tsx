@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { PoopLog, BristolType } from '../types';
 import { BRISTOL_SCALE_DATA } from '../constants';
@@ -253,7 +254,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({ logs, onDelete }) => {
                             </span>
                         )}
                          {log.isPrivate && (
-                            <span className="text-[10px] bg-stone-100 dark:bg-stone-800 text-stone-500 px-2 py-0.5 rounded-full flex items-center gap-1 w-fit">
+                            <span className="text-[10px] bg-stone-100 dark:bg-stone-800 text-stone-500 px-2 py-0.5 rounded-full flex items-center gap-1 w-fit" title="Private Log">
                                 <EyeOff className="w-3 h-3" /> Private
                             </span>
                         )}

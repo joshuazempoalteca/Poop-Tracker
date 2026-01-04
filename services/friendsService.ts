@@ -12,225 +12,147 @@ const MOCK_DATABASE_USERS: FriendProfile[] = [
 ];
 
 // --- HELPER TO MERGE REAL + MOCK ---
-const getCombinedUserDB = (): FriendProfile[] => {
-    // 1. Get real registered users from auth service
-    const realUsers = getAllUsers().map(u => ({
-        id: u.id,
-        username: u.username,
-        level: u.level || 1,
-        avatar: u.avatar
-    }));
+const getCombinedUserDB = (excludeId?: string): FriendProfile[] => {
+    const realUsers = getAllUsers()
+        .filter(u => u.id !== excludeId)
+        .map(u => ({
+            id: u.id,
+            username: u.username,
+            level: u.level || 1,
+            avatar: u.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${u.username}`
+        }));
 
-    // 2. Combine with Mock users
     const combined = [...MOCK_DATABASE_USERS];
-    
     realUsers.forEach(realUser => {
-        if (!combined.find(c => c.id === realUser.id)) {
-            combined.push(realUser);
-        }
+        if (!combined.find(c => c.id === realUser.id)) combined.push(realUser);
     });
 
-    return combined;
+    return combined.filter(u => u.id !== excludeId);
 };
 
-// --- SERVICE METHODS ---
-
-export const searchUsers = async (query: string): Promise<FriendProfile[]> => {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
+export const searchUsers = async (query: string, currentUserId?: string): Promise<FriendProfile[]> => {
+  await new Promise(resolve => setTimeout(resolve, 300));
   if (!query) return [];
   const lowerQ = query.toLowerCase();
-  
-  const allUsers = getCombinedUserDB();
-
-  return allUsers.filter(u => 
-    u.username.toLowerCase().includes(lowerQ) || 
-    u.id.toLowerCase().includes(lowerQ)
-  );
+  const allUsers = getCombinedUserDB(currentUserId);
+  return allUsers.filter(u => u.username.toLowerCase().includes(lowerQ) || u.id.toLowerCase().includes(lowerQ));
 };
 
 export const getFriendsByIds = async (friendIds: string[]): Promise<FriendProfile[]> => {
-   await new Promise(resolve => setTimeout(resolve, 300));
+   await new Promise(resolve => setTimeout(resolve, 200));
    const allUsers = getCombinedUserDB();
    return allUsers.filter(u => friendIds.includes(u.id));
 };
 
 export const getFriendRequests = async (requestIds: string[]): Promise<FriendProfile[]> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise(resolve => setTimeout(resolve, 200));
     const allUsers = getCombinedUserDB();
     return allUsers.filter(u => requestIds.includes(u.id));
 };
 
-// --- REQUEST LOGIC ---
-
 export const sendFriendRequest = async (currentUser: User, targetUserId: string): Promise<User> => {
-    await new Promise(resolve => setTimeout(resolve, 400)); // Sim network
+    await new Promise(resolve => setTimeout(resolve, 300));
+    if (currentUser.id === targetUserId) return currentUser;
+    if (currentUser.outgoingRequests?.includes(targetUserId)) return currentUser;
 
-    // 1. Handle Mock Users (Auto-accept after delay logic simulated here or in UI)
-    // Actually, let's simulate the network request behavior.
     const isMock = targetUserId.startsWith('u_');
+    const updatedUser = { 
+        ...currentUser, 
+        outgoingRequests: [...(currentUser.outgoingRequests || []), targetUserId] 
+    };
+    updateUserProfile(updatedUser);
 
     if (isMock) {
-        // Mock users automatically "accept" after a few seconds.
-        // For immediate UX, we will just add to Outgoing. 
-        // We can simulate an "async accept" by returning the updated user with outgoing request,
-        // and using a setTimeout to "receive" the acceptance later (which updates the DB).
-        
-        const updatedUser = { 
-            ...currentUser, 
-            outgoingRequests: [...(currentUser.outgoingRequests || []), targetUserId] 
-        };
-        updateUserProfile(updatedUser);
-
-        // Simulate Mock User Acceptance Logic
         setTimeout(() => {
             const freshUser = getUserById(currentUser.id);
-            if (freshUser) {
-                // Remove from outgoing, add to friends
+            if (freshUser && freshUser.outgoingRequests?.includes(targetUserId)) {
                 const newOutgoing = (freshUser.outgoingRequests || []).filter(id => id !== targetUserId);
-                const newFriends = [...(freshUser.friends || []), targetUserId];
+                const newFriends = Array.from(new Set([...(freshUser.friends || []), targetUserId]));
+                updateUserProfile({ ...freshUser, friends: newFriends, outgoingRequests: newOutgoing });
                 
-                const acceptedUser = { ...freshUser, friends: newFriends, outgoingRequests: newOutgoing };
-                updateUserProfile(acceptedUser);
-                
-                // Trigger a browser notification if supported/enabled
                 if ('Notification' in window && Notification.permission === 'granted') {
                     const mockName = MOCK_DATABASE_USERS.find(u => u.id === targetUserId)?.username || 'Friend';
                     new Notification("DooDoo Log", { body: `${mockName} accepted your friend request!` });
                 }
             }
-        }, 5000); // 5 seconds delay
-
-        return updatedUser;
+        }, 2000);
     } else {
-        // 2. Real Users
-        // Update Target User
         const targetUser = getUserById(targetUserId);
         if (targetUser) {
-            const newRequests = [...(targetUser.friendRequests || [])];
-            if (!newRequests.includes(currentUser.id)) {
-                newRequests.push(currentUser.id);
-                updateOtherUser({ ...targetUser, friendRequests: newRequests });
-            }
+            const newRequests = Array.from(new Set([...(targetUser.friendRequests || []), currentUser.id]));
+            updateOtherUser({ ...targetUser, friendRequests: newRequests });
         }
-
-        // Update Current User
-        const updatedUser = {
-            ...currentUser,
-            outgoingRequests: [...(currentUser.outgoingRequests || []), targetUserId]
-        };
-        updateUserProfile(updatedUser);
-        
-        return updatedUser;
     }
+    return updatedUser;
+};
+
+export const cancelFriendRequest = async (currentUser: User, targetUserId: string): Promise<User> => {
+    await new Promise(resolve => setTimeout(resolve, 200));
+    const newOutgoing = (currentUser.outgoingRequests || []).filter(id => id !== targetUserId);
+    const updatedUser = { ...currentUser, outgoingRequests: newOutgoing };
+    updateUserProfile(updatedUser);
+
+    if (!targetUserId.startsWith('u_')) {
+        const targetUser = getUserById(targetUserId);
+        if (targetUser) {
+            const newRequests = (targetUser.friendRequests || []).filter(id => id !== currentUser.id);
+            updateOtherUser({ ...targetUser, friendRequests: newRequests });
+        }
+    }
+    return updatedUser;
 };
 
 export const acceptFriendRequest = async (currentUser: User, requesterId: string): Promise<User> => {
     await new Promise(resolve => setTimeout(resolve, 300));
-
-    // 1. Update Current User
     const newRequests = (currentUser.friendRequests || []).filter(id => id !== requesterId);
-    const newFriends = [...(currentUser.friends || []), requesterId];
-    
-    const updatedCurrentUser = {
-        ...currentUser,
-        friendRequests: newRequests,
-        friends: newFriends
-    };
-    updateUserProfile(updatedCurrentUser);
+    const newFriends = Array.from(new Set([...(currentUser.friends || []), requesterId]));
+    const updatedUser = { ...currentUser, friendRequests: newRequests, friends: newFriends };
+    updateUserProfile(updatedUser);
 
-    // 2. Update Requester (if real user)
     const requester = getUserById(requesterId);
     if (requester) {
         const theirOutgoing = (requester.outgoingRequests || []).filter(id => id !== currentUser.id);
-        const theirFriends = [...(requester.friends || []), currentUser.id];
-        updateOtherUser({ 
-            ...requester, 
-            outgoingRequests: theirOutgoing,
-            friends: theirFriends 
-        });
+        const theirFriends = Array.from(new Set([...(requester.friends || []), currentUser.id]));
+        updateOtherUser({ ...requester, outgoingRequests: theirOutgoing, friends: theirFriends });
     }
-
-    return updatedCurrentUser;
+    return updatedUser;
 };
 
 export const denyFriendRequest = async (currentUser: User, requesterId: string): Promise<User> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    // 1. Update Current User
+    await new Promise(resolve => setTimeout(resolve, 200));
     const newRequests = (currentUser.friendRequests || []).filter(id => id !== requesterId);
-    const updatedCurrentUser = { ...currentUser, friendRequests: newRequests };
-    updateUserProfile(updatedCurrentUser);
+    const updatedUser = { ...currentUser, friendRequests: newRequests };
+    updateUserProfile(updatedUser);
 
-    // 2. Update Requester (remove from their outgoing)
     const requester = getUserById(requesterId);
     if (requester) {
         const theirOutgoing = (requester.outgoingRequests || []).filter(id => id !== currentUser.id);
         updateOtherUser({ ...requester, outgoingRequests: theirOutgoing });
     }
-
-    return updatedCurrentUser;
+    return updatedUser;
 };
-
-// --- FEED GENERATION ---
 
 export const getFriendFeed = async (currentUser: User): Promise<FriendLog[]> => {
-  await new Promise(resolve => setTimeout(resolve, 800));
-
+  await new Promise(resolve => setTimeout(resolve, 500));
   const friendIds = currentUser.friends || [];
-  if (friendIds.length === 0) {
-    return [];
-  }
-
-  const allUsers = getCombinedUserDB();
-  const friends = allUsers.filter(u => friendIds.includes(u.id));
-  
+  if (friendIds.length === 0) return [];
+  const friends = getCombinedUserDB().filter(u => friendIds.includes(u.id));
   const feed: FriendLog[] = [];
   const now = Date.now();
-
   friends.forEach(friend => {
-    // Deterministic pseudo-random based on friend ID and current hour
-    const seed = friend.id.charCodeAt(0) + new Date().getHours();
-    
-    // 70% chance a friend posted today
-    if (seed % 10 > 2) {
-        // CHECK PRIVACY (Simulated)
-        // If this were a real backend, we'd filter `isPrivate` logs here.
-        // Since we generate logs on the fly, let's simulate that some logs are private and thus hidden.
-        // If (seed % 20 === 0), it's private, so we skip adding it.
-        const isPrivate = seed % 20 === 0;
-
-        if (!isPrivate) {
-            feed.push({
-                id: `log_${friend.id}_${now}`,
-                timestamp: now - (Math.random() * 1000 * 60 * 60 * 5),
-                type: ((seed % 7) + 1) as BristolType,
-                notes: getRandomNote(seed),
-                username: friend.username,
-                userAvatar: friend.avatar,
-                durationMinutes: (seed % 15) + 2,
-                reactions: [
-                    { emoji: '💩', count: (seed % 5), userReacted: false },
-                    { emoji: '🎉', count: (seed % 2), userReacted: false }
-                ]
-            });
-        }
+    const seed = friend.id.charCodeAt(0) + new Date().getHours() + friend.level;
+    if (seed % 10 > 1) {
+        feed.push({
+            id: `log_${friend.id}_${now}_${seed}`,
+            timestamp: now - ((seed % 24) * 60 * 60 * 1000),
+            type: ((seed % 7) + 1) as BristolType,
+            notes: ["Intense!", "Better now.", "Morning ritual.", "Fiber helps!", "Smooth."][seed % 5],
+            username: friend.username,
+            userAvatar: friend.avatar,
+            durationMinutes: (seed % 12) + 3,
+            reactions: [{ emoji: '💩', count: (seed % 3) + 1, userReacted: false }]
+        });
     }
   });
-
   return feed.sort((a, b) => b.timestamp - a.timestamp);
-};
-
-const getRandomNote = (seed: number): string => {
-    const notes = [
-        "Feeling lighter!",
-        "Too much coffee...",
-        "Proud of this one.",
-        "Rough morning.",
-        "Smooth sailing.",
-        "Clean sweep!",
-        "Need more fiber.",
-        ""
-    ];
-    return notes[seed % notes.length];
 };
