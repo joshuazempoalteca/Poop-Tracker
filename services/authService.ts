@@ -53,10 +53,9 @@ export const getCurrentUser = async (): Promise<User | null> => {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return null;
 
-  const { data: profile } = await supabase
+  let { data: profile } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', session.user.id)
     .eq('id', session.user.id)
     .single();
 
