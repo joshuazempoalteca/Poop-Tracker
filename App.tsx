@@ -29,21 +29,24 @@ const App: React.FC = () => {
   const [logs, setLogs] = useState<PoopLog[]>([]);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  
+  const [userProfileLegalTab, setUserProfileLegalTab] = useState<'TOS' | 'PRIVACY'>('PRIVACY');
+
   // Undo State
   const [undoLog, setUndoLog] = useState<PoopLog | null>(null);
   const [showToast, setShowToast] = useState(false);
   const toastTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const refreshUser = () => {
-        const currentUser = getCurrentUser();
-        if (currentUser) setUser(currentUser);
+    const initData = async () => {
+      const currentUser = await getCurrentUser();
+      if (currentUser) setUser(currentUser);
+
+      const fetchedLogs = await getLogs();
+      setLogs(fetchedLogs);
     };
 
-    refreshUser();
-    setLogs(getLogs());
-    
+    initData();
+
     const storedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const dark = storedTheme === 'dark' || (!storedTheme && prefersDark);
@@ -51,80 +54,73 @@ const App: React.FC = () => {
     document.documentElement.classList.toggle('dark', dark);
 
     const handleProfileUpdate = (e: any) => setUser(e.detail);
-    const handleDBUpdate = () => {
-        const current = getCurrentUser();
-        if (current) {
-            const fresh = getUserById(current.id);
-            if (fresh) setUser(fresh);
-        }
-    };
 
+    // Listen for manual refetch events if we add them
     window.addEventListener('doodoo_profile_updated', handleProfileUpdate as EventListener);
-    window.addEventListener('doodoo_db_updated', handleDBUpdate);
-    window.addEventListener('storage', handleDBUpdate);
-    
+
     return () => {
-        window.removeEventListener('doodoo_profile_updated', handleProfileUpdate as EventListener);
-        window.removeEventListener('doodoo_db_updated', handleDBUpdate);
-        window.removeEventListener('storage', handleDBUpdate);
+      window.removeEventListener('doodoo_profile_updated', handleProfileUpdate as EventListener);
     };
   }, []);
 
   const toggleDarkMode = () => {
-      const newMode = !isDarkMode;
-      setIsDarkMode(newMode);
-      document.documentElement.classList.toggle('dark', newMode);
-      localStorage.setItem('theme', newMode ? 'dark' : 'light');
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    document.documentElement.classList.toggle('dark', newMode);
+    localStorage.setItem('theme', newMode ? 'dark' : 'light');
   };
 
   const handleLogin = (newUser: User) => setUser(newUser);
-  const handleLogout = () => {
-      logoutUser();
-      setUser(null);
-      setIsProfileOpen(false);
+  const handleLogout = async () => {
+    await logoutUser();
+    setUser(null);
+    setIsProfileOpen(false);
   };
 
-  const handleUserUpdate = (updatedUser: User) => {
-      setUser(updatedUser);
-      updateUserProfile(updatedUser);
+  const handleUserUpdate = async (updatedUser: User) => {
+    setUser(updatedUser);
+    await updateUserProfile(updatedUser);
   };
 
   const handleLogsUpdated = (newLogs: PoopLog[]) => setLogs(newLogs);
 
-  const handleSave = (log: PoopLog) => {
+  const handleSave = async (log: PoopLog) => {
     const xpGained = calculateXP({ type: log.type, size: log.size, hasBlood: log.hasBlood, weight: log.weight });
     const finalLog = { ...log, xpGained };
 
     if (user) {
-        const newUser = { ...user, xp: (user.xp || 0) + xpGained };
-        handleUserUpdate(newUser);
+      const newUser = { ...user, xp: (user.xp || 0) + xpGained };
+      handleUserUpdate(newUser);
     }
 
-    const updated = saveLog(finalLog);
+    const updated = await saveLog(finalLog);
     setLogs(updated);
     setView(View.HISTORY);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const logToRemove = logs.find(l => l.id === id);
     if (!logToRemove) return;
-    const updated = deleteLog(id);
+    const updated = await deleteLog(id);
     setLogs(updated);
     setUndoLog(logToRemove);
     setShowToast(true);
     if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     toastTimeoutRef.current = window.setTimeout(() => {
-        setShowToast(false);
-        setUndoLog(null);
+      setShowToast(false);
+      setUndoLog(null);
     }, 5000);
   };
 
   if (!user) return <Auth onLogin={handleLogin} />;
 
+
+
+
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950 font-sans text-stone-900 dark:text-stone-100 pb-20 max-w-md mx-auto border-x border-stone-200 dark:border-stone-800 shadow-2xl relative transition-colors duration-300">
-      <UserProfile 
-        isOpen={isProfileOpen} 
+      <UserProfile
+        isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         user={user}
         onLogout={handleLogout}
@@ -133,27 +129,28 @@ const App: React.FC = () => {
         logs={logs}
         onUpdateUser={handleUserUpdate}
         onLogsUpdated={handleLogsUpdated}
-        onOpenLegal={() => {
-            setIsProfileOpen(false);
-            setView(View.LEGAL);
+        onOpenLegal={(tab) => {
+          if (tab) setUserProfileLegalTab(tab);
+          setIsProfileOpen(false);
+          setView(View.LEGAL);
         }}
       />
 
       <header className="bg-white/80 dark:bg-stone-900/80 backdrop-blur-md sticky top-0 z-10 px-6 py-4 border-b border-brown-100 dark:border-stone-800 flex justify-between items-center">
         <div className="flex items-center gap-2">
           {view === View.LEGAL ? (
-              <button onClick={() => setView(View.PRO)} className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg">
-                  <ArrowLeft className="w-5 h-5 text-brown-600" />
-              </button>
+            <button onClick={() => setView(View.PRO)} className="p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-lg">
+              <ArrowLeft className="w-5 h-5 text-brown-600" />
+            </button>
           ) : (
-              <span className="text-2xl">💩</span>
+            <span className="text-2xl">💩</span>
           )}
           <h1 className="text-xl font-bold text-brown-900 dark:text-stone-100 tracking-tight">
-              {view === View.LEGAL ? 'Legal Center' : 'DooDoo Log'}
+            {view === View.LEGAL ? 'Legal Center' : 'DooDoo Log'}
           </h1>
         </div>
         <button onClick={() => setIsProfileOpen(true)} className="w-8 h-8 rounded-full bg-brown-100 dark:bg-stone-800 flex items-center justify-center text-brown-600 dark:text-stone-400">
-            <UserCircle2 className="w-5 h-5" />
+          <UserCircle2 className="w-5 h-5" />
         </button>
       </header>
 
@@ -163,7 +160,7 @@ const App: React.FC = () => {
         {view === View.STATS && <StatsDashboard logs={logs} />}
         {view === View.FRIENDS && <FriendFeed currentUser={user} onUpdateUser={handleUserUpdate} />}
         {view === View.PRO && <ProductionGuide onOpenLegal={() => setView(View.LEGAL)} />}
-        {view === View.LEGAL && <LegalDocs />}
+        {view === View.LEGAL && <LegalDocs initialTab={userProfileLegalTab} />}
       </main>
 
       {view === View.HISTORY && (
