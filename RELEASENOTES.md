@@ -1,3 +1,20 @@
+# 🛠 v1.2.0 - The "Privacy & Health" Update
+**Released: February 16, 2026**
+
+We've improved privacy, added guest access, and included helpful health tips!
+
+### 👤 Guest Mode
+- **No Account Needed**: You can now use the app without logging in. Data is saved locally.
+
+### 🗑 Account Control
+- **Delete Account**: You can now permanently delete your account and data from the Profile screen.
+
+### 🍎 Health & Content
+- **Health Tips**: A new section providing helpful digestion tips.
+- **Statistics**: Improved dashboard with useful metrics.
+
+---
+
 # 🛠 v1.1.2 - The "Consent & Secrets" Patch
 **Released: October 26, 2025**
 
@@ -73,6 +90,8 @@ Ever wondered how your friends are doing? (Okay, maybe not *that* specifically).
 Your personal bathroom assistant is here. 
 - Enable **AI Insights** in your profile to get a witty roast or a high-five after every log.
 - It analyzes your Bristol Type and Notes to give custom feedback.
+
+
 
 ### 4. Search & Filter 🔍
 - Lost that one note about the spicy burrito? Use the new **Search Bar** in the History tab.
