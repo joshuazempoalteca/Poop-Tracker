@@ -4,6 +4,7 @@ import SwiftUI
 struct HistoryListView: View {
     @EnvironmentObject var viewModel: AppViewModel
     @State private var showingLogForm = false
+    @State private var logToEdit: PoopLog?
     
     var body: some View {
         NavigationView {
@@ -32,6 +33,10 @@ struct HistoryListView: View {
                                 .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                                 .listRowBackground(Color.clear)
                                 .listRowSeparator(.hidden)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    logToEdit = log
+                                }
                         }
                         .onDelete { indexSet in
                             performDelete(at: indexSet)
@@ -64,6 +69,9 @@ struct HistoryListView: View {
             .navigationTitle("History")
             .sheet(isPresented: $showingLogForm) {
                 LogFormView()
+            }
+            .sheet(item: $logToEdit) { log in
+                LogFormView(existingLog: log)
             }
         }
     }

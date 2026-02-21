@@ -4,12 +4,32 @@ import SwiftUI
 struct LogFormView: View {
     @EnvironmentObject var viewModel: AppViewModel
     @Environment(\.presentationMode) var presentationMode
-    
+
+    // Optional: existing log for edit mode
+    let existingLog: PoopLog?
+
     @State private var selectedType: BristolType = .type4
     @State private var selectedSize: PoopSize = .medium
     @State private var notes: String = ""
     @State private var hasBlood: Bool = false
     @State private var showSuccess = false
+
+    // Computed property to determine mode
+    private var isEditMode: Bool {
+        existingLog != nil
+    }
+
+    init(existingLog: PoopLog? = nil) {
+        self.existingLog = existingLog
+
+        // Initialize state from existing log if editing
+        if let log = existingLog {
+            _selectedType = State(initialValue: log.bristolType)
+            _selectedSize = State(initialValue: log.poopSize)
+            _notes = State(initialValue: log.notes ?? "")
+            _hasBlood = State(initialValue: log.hasBlood ?? false)
+        }
+    }
     
     var body: some View {
         NavigationView {
@@ -62,7 +82,7 @@ struct LogFormView: View {
                 
                 Section {
                     Button(action: saveLog) {
-                        Text("Save Entry")
+                        Text(isEditMode ? "Update Entry" : "Save Entry")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .foregroundColor(.white)
@@ -70,7 +90,7 @@ struct LogFormView: View {
                     .listRowBackground(Color.poopBrown)
                 }
             }
-            .navigationTitle("New Log")
+            .navigationTitle(isEditMode ? "Edit Log" : "New Log")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -87,7 +107,7 @@ struct LogFormView: View {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 60))
                         .foregroundColor(.green)
-                    Text("Log Saved!")
+                    Text(isEditMode ? "Log Updated!" : "Log Saved!")
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
@@ -103,23 +123,34 @@ struct LogFormView: View {
     }
     
     private func saveLog() {
-        let newLog = PoopLog(
-            type: selectedType,
-            notes: notes,
-            size: selectedSize,
-            hasBlood: hasBlood
-        )
-        
         Task {
-            await viewModel.addLog(newLog)
-            
+            if isEditMode, var log = existingLog {
+                // Update existing log
+                log.type = selectedType.rawValue
+                log.size = selectedSize.rawValue
+                log.notes = notes.isEmpty ? nil : notes
+                log.hasBlood = hasBlood
+
+                await viewModel.updateLog(log)
+            } else {
+                // Create new log
+                let newLog = PoopLog(
+                    type: selectedType,
+                    notes: notes,
+                    size: selectedSize,
+                    hasBlood: hasBlood
+                )
+
+                await viewModel.addLog(newLog)
+            }
+
             withAnimation {
                 showSuccess = true
             }
-            
+
             // Delay for user to see the success message
             try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-            
+
             DispatchQueue.main.async {
                 presentationMode.wrappedValue.dismiss()
             }

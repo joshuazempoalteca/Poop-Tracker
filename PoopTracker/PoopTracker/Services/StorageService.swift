@@ -35,6 +35,23 @@ class StorageService {
         }
     }
     
+    @MainActor
+    func updateLog(_ log: PoopLog) async throws {
+        guard let logId = log.id else {
+            throw StorageError.missingId
+        }
+
+        if AuthService.shared.session != nil {
+            try await client
+                .from("poop_logs")
+                .update(log)
+                .eq("id", value: logId)
+                .execute()
+        } else {
+            try saveLocalLog(log) // Local helper already handles updates
+        }
+    }
+
     func deleteLog(id: String) async throws {
         if AuthService.shared.session != nil {
             try await client
@@ -91,5 +108,18 @@ class StorageService {
         encoder.outputFormatting = .prettyPrinted
         let data = try encoder.encode(logs)
         try data.write(to: localFileURL)
+    }
+}
+
+// MARK: - Errors
+
+enum StorageError: LocalizedError {
+    case missingId
+
+    var errorDescription: String? {
+        switch self {
+        case .missingId:
+            return "Cannot update log without an ID"
+        }
     }
 }

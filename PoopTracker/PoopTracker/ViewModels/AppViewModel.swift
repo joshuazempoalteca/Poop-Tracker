@@ -62,7 +62,7 @@ class AppViewModel: ObservableObject {
         let xp = GamificationService.calculateXP(log: log)
         var finalLog = log
         finalLog.xpGained = xp
-        
+
         do {
             try await StorageService.shared.saveLog(finalLog)
             await fetchLogs() // Refresh list
@@ -70,7 +70,21 @@ class AppViewModel: ObservableObject {
             self.errorMessage = "Failed to save log: \(error.localizedDescription)"
         }
     }
-    
+
+    func updateLog(_ log: PoopLog) async {
+        // Recalculate XP in case log data changed
+        let xp = GamificationService.calculateXP(log: log)
+        var finalLog = log
+        finalLog.xpGained = xp
+
+        do {
+            try await StorageService.shared.updateLog(finalLog)
+            await fetchLogs() // Refresh list
+        } catch {
+            self.errorMessage = "Failed to update log: \(error.localizedDescription)"
+        }
+    }
+
     func deleteLog(id: String) async {
         do {
             try await StorageService.shared.deleteLog(id: id)
