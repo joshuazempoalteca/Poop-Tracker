@@ -14,25 +14,28 @@ struct ContentView: View {
                     Label("History", systemImage: "list.bullet")
                 }
                 .tag(0)
-            
+
             StatsDashboardView()
                 .tabItem {
                     Label("Stats", systemImage: "chart.bar.fill")
                 }
                 .tag(1)
-            
+
             HealthTipsView()
                 .tabItem {
                     Label("Tips", systemImage: "heart.text.square.fill")
                 }
                 .tag(2)
-            
-            FriendFeedView()
-                .tabItem {
-                    Label("Friends", systemImage: "person.2.fill")
-                }
-                .tag(3)
-            
+
+            // Friends tab only visible for authenticated users (not guest mode)
+            if viewModel.currentUser != nil && !viewModel.isGuest {
+                FriendFeedView()
+                    .tabItem {
+                        Label("Friends", systemImage: "person.2.fill")
+                    }
+                    .tag(3)
+            }
+
             UserProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "person.circle.fill")

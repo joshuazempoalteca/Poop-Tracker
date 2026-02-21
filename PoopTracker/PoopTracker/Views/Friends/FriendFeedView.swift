@@ -8,46 +8,66 @@ struct FriendFeedView: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // Segmented Control
-                Picker("View", selection: $selectedTab) {
-                    Text("Feed").tag(0)
-                    Text("Friends").tag(1)
-                    Text("Requests").tag(2)
-                }
-                .pickerStyle(.segmented)
-                .padding()
+            // Guard: Friends feature requires authentication
+            if viewModel.currentUser == nil || viewModel.isGuest {
+                VStack(spacing: 20) {
+                    Image(systemName: "person.2.slash")
+                        .font(.system(size: 80))
+                        .foregroundStyle(Color.secondary.opacity(0.5))
 
-                // Content based on selected tab
-                Group {
-                    if selectedTab == 0 {
-                        FeedTabView()
-                    } else if selectedTab == 1 {
-                        FriendsTabView()
-                    } else {
-                        RequestsTabView()
+                    Text("Sign In Required")
+                        .font(.title2)
+                        .fontWeight(.bold)
+
+                    Text("Friends feature is only available for registered users. Please sign in or create an account.")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
+                .navigationTitle("Friends")
+            } else {
+                VStack(spacing: 0) {
+                    // Segmented Control
+                    Picker("View", selection: $selectedTab) {
+                        Text("Feed").tag(0)
+                        Text("Friends").tag(1)
+                        Text("Requests").tag(2)
+                    }
+                    .pickerStyle(.segmented)
+                    .padding()
+
+                    // Content based on selected tab
+                    Group {
+                        if selectedTab == 0 {
+                            FeedTabView()
+                        } else if selectedTab == 1 {
+                            FriendsTabView()
+                        } else {
+                            RequestsTabView()
+                        }
                     }
                 }
-            }
-            .navigationTitle("Friends")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        showingAddFriend = true
-                    }) {
-                        Image(systemName: "person.badge.plus")
-                            .foregroundColor(.poopBrown)
+                .navigationTitle("Friends")
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: {
+                            showingAddFriend = true
+                        }) {
+                            Image(systemName: "person.badge.plus")
+                                .foregroundColor(.poopBrown)
+                        }
                     }
                 }
-            }
-            .sheet(isPresented: $showingAddFriend) {
-                AddFriendView()
-            }
-            .task {
-                await loadData()
-            }
-            .refreshable {
-                await loadData()
+                .sheet(isPresented: $showingAddFriend) {
+                    AddFriendView()
+                }
+                .task {
+                    await loadData()
+                }
+                .refreshable {
+                    await loadData()
+                }
             }
         }
     }
