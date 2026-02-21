@@ -57,6 +57,10 @@ alter table friendships enable row level security;
 create policy "Users can view their friendships" on friendships for select using (auth.uid() = user_id or auth.uid() = friend_id);
 create policy "Users can send requests" on friendships for insert with check (auth.uid() = user_id);
 create policy "Users can update status (accept/reject)" on friendships for update using (auth.uid() = friend_id);
+create policy "Users can delete friendships" on friendships for delete using (auth.uid() = user_id or auth.uid() = friend_id);
+
+-- Index for better query performance
+create index idx_friendships_lookup on friendships(user_id, friend_id, status);
 
 -- STORAGE (Run this if you want image uploads)
 -- insert into storage.buckets (id, name, public) values ('poop-images', 'poop-images', true);

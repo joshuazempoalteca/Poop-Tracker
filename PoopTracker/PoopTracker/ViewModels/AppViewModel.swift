@@ -9,7 +9,13 @@ class AppViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var isGuest = false
-    
+
+    // Friends-related state
+    @Published var friends: [FriendWithProfile] = []
+    @Published var pendingRequests: [FriendWithProfile] = []
+    @Published var sentRequests: [FriendWithProfile] = []
+    @Published var friendLogs: [PoopLog] = []
+
     private var cancellables = Set<AnyCancellable>()
     
     init() {
@@ -91,6 +97,101 @@ class AppViewModel: ObservableObject {
             self.logs = []
         } catch {
             self.errorMessage = "Failed to delete account: \(error.localizedDescription)"
+        }
+    }
+
+    // MARK: - Friends Methods
+
+    func fetchFriends() async {
+        isLoading = true
+        do {
+            self.friends = try await FriendsService.shared.fetchFriends()
+        } catch {
+            self.errorMessage = error.localizedDescription
+        }
+        isLoading = false
+    }
+
+    func fetchPendingRequests() async {
+        do {
+            self.pendingRequests = try await FriendsService.shared.fetchPendingRequests()
+        } catch {
+            self.errorMessage = error.localizedDescription
+        }
+    }
+
+    func fetchSentRequests() async {
+        do {
+            self.sentRequests = try await FriendsService.shared.fetchSentRequests()
+        } catch {
+            self.errorMessage = error.localizedDescription
+        }
+    }
+
+    func fetchFriendLogs() async {
+        isLoading = true
+        do {
+            self.friendLogs = try await FriendsService.shared.fetchFriendLogs()
+        } catch {
+            self.errorMessage = error.localizedDescription
+        }
+        isLoading = false
+    }
+
+    func sendFriendRequest(toUserId: String) async {
+        do {
+            try await FriendsService.shared.sendFriendRequest(toUserId: toUserId)
+            await fetchSentRequests()
+        } catch {
+            self.errorMessage = "Failed to send request: \(error.localizedDescription)"
+        }
+    }
+
+    func acceptFriendRequest(friendshipId: String) async {
+        do {
+            try await FriendsService.shared.acceptFriendRequest(friendshipId: friendshipId)
+            await fetchPendingRequests()
+            await fetchFriends()
+            await fetchFriendLogs()
+        } catch {
+            self.errorMessage = "Failed to accept request: \(error.localizedDescription)"
+        }
+    }
+
+    func declineFriendRequest(friendshipId: String) async {
+        do {
+            try await FriendsService.shared.declineFriendRequest(friendshipId: friendshipId)
+            await fetchPendingRequests()
+        } catch {
+            self.errorMessage = "Failed to decline request: \(error.localizedDescription)"
+        }
+    }
+
+    func blockUser(friendshipId: String) async {
+        do {
+            try await FriendsService.shared.blockUser(friendshipId: friendshipId)
+            await fetchPendingRequests()
+        } catch {
+            self.errorMessage = "Failed to block user: \(error.localizedDescription)"
+        }
+    }
+
+    func removeFriend(friendshipId: String) async {
+        do {
+            try await FriendsService.shared.removeFriend(friendshipId: friendshipId)
+            await fetchFriends()
+            await fetchFriendLogs()
+        } catch {
+            self.errorMessage = "Failed to remove friend: \(error.localizedDescription)"
+        }
+    }
+
+    func cancelSentRequest(friendshipId: String) async {
+        do {
+            try await FriendsService.shared.declineFriendRequest(friendshipId: friendshipId)
+            await fetchSentRequests()
+        } catch {
+            self.errorMessage = "Failed to cancel request: \(error.localizedDescription)"
         }
     }
 }
