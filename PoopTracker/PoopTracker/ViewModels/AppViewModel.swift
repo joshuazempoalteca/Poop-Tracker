@@ -95,9 +95,37 @@ class AppViewModel: ObservableObject {
             try await AuthService.shared.deleteAccount()
             self.currentUser = nil
             self.logs = []
+            self.friends = []
+            self.pendingRequests = []
+            self.sentRequests = []
+            self.friendLogs = []
         } catch {
             self.errorMessage = "Failed to delete account: \(error.localizedDescription)"
         }
+    }
+
+    func deleteData() async {
+        isLoading = true
+        do {
+            // Delete all user logs
+            for log in logs {
+                if let logId = log.id {
+                    try await StorageService.shared.deleteLog(id: logId)
+                }
+            }
+
+            // Clear local state
+            self.logs = []
+
+            // If authenticated, also clear friend logs from view
+            if currentUser != nil {
+                self.friendLogs = []
+            }
+
+        } catch {
+            self.errorMessage = "Failed to delete data: \(error.localizedDescription)"
+        }
+        isLoading = false
     }
 
     // MARK: - Friends Methods

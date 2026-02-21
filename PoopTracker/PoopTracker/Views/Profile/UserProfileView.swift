@@ -3,7 +3,8 @@ import SwiftUI
 
 struct UserProfileView: View {
     @EnvironmentObject var viewModel: AppViewModel
-    @State private var showDeleteConfirmation = false
+    @State private var showDeleteAccountConfirmation = false
+    @State private var showDeleteDataConfirmation = false
     @State private var showCopiedMessage = false
     
     var body: some View {
@@ -119,34 +120,75 @@ struct UserProfileView: View {
                 
 
                 
-                Section {
-                    Button(action: {
-                        Task {
-                            await viewModel.logout()
+                // Different options for authenticated vs guest users
+                if viewModel.isGuest {
+                    // Guest mode: Only show Delete Data
+                    Section {
+                        Button(role: .destructive, action: {
+                            showDeleteDataConfirmation = true
+                        }) {
+                            Label("Delete Data", systemImage: "trash")
+                                .foregroundColor(.red)
                         }
-                    }) {
-                        Label("Log Out", systemImage: "rectangle.portrait.and.arrow.right")
-                            .foregroundColor(.red)
+                    } footer: {
+                        Text("This will delete all locally stored logs on this device")
+                            .font(.caption)
                     }
-                    
-                    Button(role: .destructive, action: {
-                        showDeleteConfirmation = true
-                    }) {
-                        Label("Delete Account", systemImage: "trash")
-                            .foregroundColor(.red)
+                } else if viewModel.currentUser != nil {
+                    // Authenticated user: Show both Delete Data and Delete Account
+                    Section {
+                        Button(action: {
+                            Task {
+                                await viewModel.logout()
+                            }
+                        }) {
+                            Label("Log Out", systemImage: "rectangle.portrait.and.arrow.right")
+                                .foregroundColor(.red)
+                        }
+
+                        Button(role: .destructive, action: {
+                            showDeleteDataConfirmation = true
+                        }) {
+                            Label("Delete Data", systemImage: "doc.on.doc.fill")
+                                .foregroundColor(.orange)
+                        }
+
+                        Button(role: .destructive, action: {
+                            showDeleteAccountConfirmation = true
+                        }) {
+                            Label("Delete Account", systemImage: "trash")
+                                .foregroundColor(.red)
+                        }
+                    } footer: {
+                        Text("Delete Data removes your logs but keeps your account. Delete Account removes everything permanently.")
+                            .font(.caption)
                     }
                 }
             }
             .navigationTitle("Profile")
-            .alert("Delete Account", isPresented: $showDeleteConfirmation) {
+            .alert("Delete Account", isPresented: $showDeleteAccountConfirmation) {
                 Button("Cancel", role: .cancel) { }
-                Button("Delete", role: .destructive) {
+                Button("Delete Account", role: .destructive) {
                     Task {
                         await viewModel.deleteAccount()
                     }
                 }
             } message: {
-                Text("Are you sure you want to delete your account? This action cannot be undone.")
+                Text("Are you sure you want to delete your account? This will permanently delete your account, all logs, and friend connections. This action cannot be undone.")
+            }
+            .alert("Delete Data", isPresented: $showDeleteDataConfirmation) {
+                Button("Cancel", role: .cancel) { }
+                Button("Delete", role: .destructive) {
+                    Task {
+                        await viewModel.deleteData()
+                    }
+                }
+            } message: {
+                if viewModel.isGuest {
+                    Text("Are you sure you want to delete all your locally stored logs? This action cannot be undone.")
+                } else {
+                    Text("Are you sure you want to delete all your logs? Your account and friends will remain intact, but all log data will be permanently deleted.")
+                }
             }
         }
     }
